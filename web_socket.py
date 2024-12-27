@@ -3,6 +3,7 @@ import threading
 import os
 import argparse
 
+
 class ServerSocket:
     def __init__(self, ip, port):
         self.ip = ip
@@ -124,12 +125,11 @@ class ClientSocket:
         print("Connection closed")
     
     def run(self):
+        self.connect()
         while True:
-            message = self.recv_msg()
-            if message == "file coming":
-                self.receive_file()
-            else:
-                print(f"Received message: {message}")
+            message = input("Enter message to send: ")
+            self.send_msg(message)
+
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
