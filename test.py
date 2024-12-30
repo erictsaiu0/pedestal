@@ -10,8 +10,7 @@ class ZoomInSetting:
         self.cap = cap
         self.zoom = 0
         self.save_path = "zoomin_check.jpg"
-        self.test_img = cv2.imread(r"/Users/erictsai/Desktop/pedestal/triggered.jpg")
-
+        
     def center_crop(self, img, gray_resize_blur=False):
         img = np.array(img)
         height, width = img.shape[:2]
@@ -61,7 +60,10 @@ class ZoomInSetting:
 
         while True:
             # Process the image with the current zoom
-            processed_img = self.center_crop(self.test_img, gray_resize_blur=False)
+            ret, frame = self.cap.read()
+            if not ret:
+                raise RuntimeError("Failed to capture image from webcam.")
+            processed_img = self.center_crop(frame, gray_resize_blur=False)
             processed_img = cv2.resize(processed_img, (512, 512))
             # Update the window title to show the current zoom value
             window_title = f"Zoom Adjustment - Current Zoom: {self.zoom:.2f}"
