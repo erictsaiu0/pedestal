@@ -15,7 +15,7 @@ from device_ip import mac_ip, isart_ip, notart_ip, describe_ip
 from pi import get_message, send_message
 
 class MotionDetector:
-    def __init__(self, cap, background_path="background.jpg", detect_interval=1, text_num=50, zoom=0):
+    def __init__(self, cap, background_path="background.jpg", detect_interval=1, text_num=50, zoom=0, audio_detach=False):
         self.cap = cap
         # check if the webcam is opened correctly, if not, exit the program
         if not self.cap.isOpened():
@@ -24,12 +24,13 @@ class MotionDetector:
         self.detect_interval = detect_interval
         self.last_detect_time = time.time()
         self.zoom = zoom
-        
+        self.audio_detach = audio_detach
         # 初始化背景影像
         self.background = self.initialize_background()
         self.state = "IDLE"
         self.last_frame = None
         self.text_num = text_num
+        self.intro_sound_path = r'intro_alloy.mp3'
     
     def center_crop(self, img, gray_resize_blur=False):
         img = np.array(img)
@@ -159,22 +160,18 @@ class MotionDetector:
         base64_image = gpt_utils.image2base64(image)
         time_img2base64_end = time.time()
 
-        # time_describe = time.time()
+        # threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
         # describe = gpt_utils.describe_iamge(base64_image)
-        # time_describe_end = time.time()
-        # time_tts = time.time()
         # describe_sound = TTS_utils.openai_tts(describe, prefix="describe", voice='random', text_num=self.text_num)
-        # time_tts = time.time()
-        # time_play = time.time()
         # sound.play_mp3(describe_sound)
-        # time_play_end = time.time()
         # print(f'resize: {time_resize_end-time_resize}, img2base64: {time_img2base64_end-time_img2base64}, describe: {time_describe_end-time_describe}, tts: {time_tts-time_describe_end}, play: {time_play_end-time_play}')
 
+        threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
         isart = gpt_utils.is_art(base64_image, text_num=self.text_num)
         isart_sound = TTS_utils.openai_tts(isart, prefix="isart", voice='random')
         threading.Thread(target=sound.play_mp3, args=(isart_sound,)).start()
-        # sound.play_mp3(isart_sound)
 
+        # threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
         # notart = gpt_utils.not_art(base64_image, text_num=self.text_num)
         # notart_sound = TTS_utils.openai_tts(notart, prefix="notart", voice='random')
         # sound.play_mp3(notart_sound)

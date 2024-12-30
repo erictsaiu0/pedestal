@@ -9,7 +9,7 @@ import numpy as np
 import threading
 
 class MotionDetector:
-    def __init__(self, cap, background_path="background.jpg", detect_interval=1):
+    def __init__(self, cap, background_path="background.jpg", detect_interval=1, audio_detach=False):
         self.cap = cap
         # check if the webcam is opened correctly, if not, exit the program
         if not self.cap.isOpened():
@@ -23,6 +23,7 @@ class MotionDetector:
         self.background = self.initialize_background()
         self.state = "IDLE"
         self.last_frame = None
+        self.audio_detach = audio_detach
         
     def center_crop(self, img):
         img = np.array(img)

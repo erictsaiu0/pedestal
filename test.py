@@ -82,7 +82,8 @@ class ZoomInSetting:
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    checker = ZoomInSetting(None)
+    cap = cv2.VideoCapture(0)
+    checker = ZoomInSetting(cap)
     checker.run()
 
 
