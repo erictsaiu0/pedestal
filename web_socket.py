@@ -67,7 +67,7 @@ class PiSocket:
 
                     file_data = recv_msg(client_socket)
                     if file_data:
-                        with open(f"{self.ip}.mp3", "wb") as f:
+                        with open(f"{addr_dict[self.ip]}.mp3", "wb") as f:
                             f.write(file_data)
                         client_socket.send("file received!".encode())
                     break
