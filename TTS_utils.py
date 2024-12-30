@@ -13,7 +13,7 @@ def openai_tts(speech_text, prefix=None, voice='alloy'):
     if voice == 'random':
         voice = random.choice(voice_list)
     if prefix:
-        save_name = f'{prefix}_{voice}.mp3'
+        save_name = f'{prefix}.mp3'
     else:
         save_name = f'{voice}.mp3'
     save_path = f'test_speech_results/{save_name}'

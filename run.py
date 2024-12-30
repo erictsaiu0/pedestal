@@ -163,7 +163,7 @@ class MotionDetector:
         # describe = gpt_utils.describe_iamge(base64_image)
         # time_describe_end = time.time()
         # time_tts = time.time()
-        # describe_sound = TTS_utils.openai_tts(describe, voice='random', text_num=self.text_num)
+        # describe_sound = TTS_utils.openai_tts(describe, prefix="describe", voice='random', text_num=self.text_num)
         # time_tts = time.time()
         # time_play = time.time()
         # sound.play_mp3(describe_sound)
@@ -171,12 +171,12 @@ class MotionDetector:
         # print(f'resize: {time_resize_end-time_resize}, img2base64: {time_img2base64_end-time_img2base64}, describe: {time_describe_end-time_describe}, tts: {time_tts-time_describe_end}, play: {time_play_end-time_play}')
 
         isart = gpt_utils.is_art(base64_image, text_num=self.text_num)
-        isart_sound = TTS_utils.openai_tts(isart, voice='random')
+        isart_sound = TTS_utils.openai_tts(isart, prefix="isart", voice='random')
         threading.Thread(target=sound.play_mp3, args=(isart_sound,)).start()
         # sound.play_mp3(isart_sound)
 
         # notart = gpt_utils.not_art(base64_image, text_num=self.text_num)
-        # notart_sound = TTS_utils.openai_tts(notart, voice='random')
+        # notart_sound = TTS_utils.openai_tts(notart, prefix="notart", voice='random')
         # sound.play_mp3(notart_sound)
         
     def run(self):
