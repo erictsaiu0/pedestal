@@ -10,9 +10,6 @@ import numpy as np
 import threading
 import argparse
 
-import socket
-from device_ip import mac_ip, isart_ip, notart_ip, describe_ip
-from pi import get_message, send_message
 from web_socket import MacSocket, PiSocket
 
 class MotionDetector:
@@ -213,7 +210,7 @@ if __name__ == "__main__":
     args.add_argument("--zoom", type=int, default=0)
     args.add_argument("--text_num", type=int, default=50)
     args.add_argument("--audio_detach", type=bool, default=False)
-    args.add_argument("--audio_playlist", type=list, default=['isart', 'notart', 'describe'])
+    args.add_argument("--audio_playlist", type=list, default=['isart'])
     args = args.parse_args()
 
     cap = cv2.VideoCapture(0)
