@@ -13,11 +13,11 @@ import argparse
 import socket
 from device_ip import mac_ip, isart_ip, notart_ip, describe_ip
 from pi import get_message, send_message
+from web_socket import MacSocket, PiSocket
 
 class MotionDetector:
-    def __init__(self, cap, background_path="background.jpg", detect_interval=1, text_num=50, zoom=0, audio_detach=False):
+    def __init__(self, cap, background_path="background.jpg", detect_interval=1, text_num=50, zoom=0, audio_detach=False, audio_playlist=['isart', 'notart', 'describe']):
         self.cap = cap
-        # check if the webcam is opened correctly, if not, exit the program
         if not self.cap.isOpened():
             raise RuntimeError("Failed to open webcam.")
         self.background_path = background_path
@@ -25,7 +25,12 @@ class MotionDetector:
         self.last_detect_time = time.time()
         self.zoom = zoom
         self.audio_detach = audio_detach
-        # 初始化背景影像
+        # if audio_detach is True, then the audio will not be played in this device, audio will be sent to other device by web_socket.py
+        self.audio_playlist = audio_playlist
+        # Configurable audio playlist that determines which audio files will be played and their order
+        if len(self.audio_playlist) == 0:
+            raise ValueError("audio_playlist must be non-empty")
+
         self.background = self.initialize_background()
         self.state = "IDLE"
         self.last_frame = None
@@ -86,13 +91,13 @@ class MotionDetector:
         ret, frame = self.cap.read()
         if not ret:
             raise RuntimeError("Failed to capture image from webcam.")
-        frame = self.center_crop(frame, gray_blur=True)
+        frame = self.center_crop(frame, gray_resize_blur=True)
         cv2.imwrite(self.background_path, frame)
         return frame
 
     def compare(self, baseline):
         ret, image = self.cap.read()
-        processed_img = self.center_crop(image, gray_blur=True)
+        processed_img = self.center_crop(image, gray_resize_blur=True)
 
         diff = cv2.absdiff(baseline, processed_img)
         _, diff = cv2.threshold(diff, 50, 255, cv2.THRESH_BINARY)
@@ -134,23 +139,59 @@ class MotionDetector:
                 self.last_frame = frame
         end = time.time()
         print(self.state, round(1 / (end - start), 4), end='\r')
+
+    def image_to_audio(self, base64_image, type):
+        # Pre-define type mappings to avoid repeated conditionals
+        type_mapping = {
+            'describe': (gpt_utils.describe_iamge, 'describe'),
+            'isart': (lambda img: gpt_utils.is_art(img, text_num=self.text_num), 'isart'),
+            'notart': (lambda img: gpt_utils.not_art(img, text_num=self.text_num), 'notart')
+        }
+
+        if type not in type_mapping:
+            raise ValueError("type must be 'describe', 'isart', or 'notart'")
+
+        if self.audio_detach:
+            try:
+                mac_socket = MacSocket(type)
+                mac_socket.send_msg("play_intro")
+            except:
+                raise RuntimeError("Socket connection failed for intro")
+        else:
+            threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
+
+        # Get text generation function and prefix from mapping
+        text_func, prefix = type_mapping[type]
+        
+        # Generate text and audio
+        text = text_func(base64_image)
+        audio_path = TTS_utils.openai_tts(text, prefix=prefix, voice='random')
+
+        # Play generated audio
+        if self.audio_detach:
+            try:
+                mac_socket = MacSocket(type)
+                mac_socket.send_file(audio_path)
+            except:
+                raise RuntimeError("Socket connection failed for audio")
+        else:
+            threading.Thread(target=sound.play_mp3, args=(audio_path,)).start()
+
     def trigger_action(self, image):
         print("NOW TRIGGER ACTION with new image")
         # 處理影像，例如計算或保存
         # cv2.imwrite("triggered.jpg", image)
 
-        # centercrop image
+        # Center crop image to square
         height, width = image.shape[:2]
-        new_width = min(width, height)
-        new_height = new_width
-        left = (width - new_width) // 2
-        top = (height - new_height) // 2
-        image = image[top:top+new_height, left:left+new_width]
-        # center crop and resize
-        crop_size = image.shape[0]//2//2
-        # center crop 
-        image = image[crop_size:-crop_size, crop_size:-crop_size]
-        cv2.imwrite("current.jpg", image)
+        size = min(width, height)
+        start_x = (width - size) // 2
+        start_y = (height - size) // 2
+        image = image[start_y:start_y+size, start_x:start_x+size]
+        
+        image = self.center_crop(image, gray_resize_blur=False)
+        
+        # cv2.imwrite("current.jpg", image)
 
         time_resize = time.time()
         image = gpt_utils.npimageResize(image, 0.5)
@@ -160,22 +201,9 @@ class MotionDetector:
         base64_image = gpt_utils.image2base64(image)
         time_img2base64_end = time.time()
 
-        # threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
-        # describe = gpt_utils.describe_iamge(base64_image)
-        # describe_sound = TTS_utils.openai_tts(describe, prefix="describe", voice='random', text_num=self.text_num)
-        # sound.play_mp3(describe_sound)
-        # print(f'resize: {time_resize_end-time_resize}, img2base64: {time_img2base64_end-time_img2base64}, describe: {time_describe_end-time_describe}, tts: {time_tts-time_describe_end}, play: {time_play_end-time_play}')
-
-        threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
-        isart = gpt_utils.is_art(base64_image, text_num=self.text_num)
-        isart_sound = TTS_utils.openai_tts(isart, prefix="isart", voice='random')
-        threading.Thread(target=sound.play_mp3, args=(isart_sound,)).start()
-
-        # threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
-        # notart = gpt_utils.not_art(base64_image, text_num=self.text_num)
-        # notart_sound = TTS_utils.openai_tts(notart, prefix="notart", voice='random')
-        # sound.play_mp3(notart_sound)
-        
+        for audio_type in self.audio_playlist:
+            self.image_to_audio(base64_image, audio_type)
+            
     def run(self):
         while True:
             self.state_machine()
@@ -184,9 +212,11 @@ if __name__ == "__main__":
     args = argparse.ArgumentParser()
     args.add_argument("--zoom", type=int, default=0)
     args.add_argument("--text_num", type=int, default=50)
+    args.add_argument("--audio_detach", type=bool, default=False)
+    args.add_argument("--audio_playlist", type=list, default=['isart', 'notart', 'describe'])
     args = args.parse_args()
 
     cap = cv2.VideoCapture(0)
-    detector = MotionDetector(cap, zoom=args.zoom, text_num=args.text_num)
+    detector = MotionDetector(cap, zoom=args.zoom, text_num=args.text_num, audio_detach=args.audio_detach, audio_playlist=args.audio_playlist)
     detector.run()
     

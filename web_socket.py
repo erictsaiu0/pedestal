@@ -5,6 +5,8 @@ import argparse
 import time
 import struct
 from device_ip import addr_dict, inv_addr_dict
+import sound
+
 def recv_msg(sock):
     # Read message length and unpack it into an integer
     raw_msglen = recvall(sock, 4)
@@ -71,6 +73,9 @@ class PiSocket:
                             f.write(file_data)
                         client_socket.send("file received!".encode())
                     break
+                elif command == "play_intro":
+                    sound.play_mp3("intro_alloy.mp3")
+                    client_socket.send("intro played!".encode())
                 else:
                     print(f"[{self.ip}] Unknown command: {command}")
                     client_socket.send("Unknown command".encode())
@@ -96,6 +101,12 @@ class MacSocket:
         self.port = 12345
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((self.target_pi_ip, self.port))
+    
+    def send_msg(self, msg):
+        try:
+            self.client_socket.send(msg.encode())
+        except Exception as e:
+            print(f"Error sending message: {e}")
 
     def send_file(self, file_name):
         try:
@@ -138,16 +149,16 @@ if __name__ == "__main__":
             exit(1)
     else:
         if args.id == "server":
-            sckt = MacSocket("pi A")
+            sckt = MacSocket("isart")
             sckt.send_file("test_speech_results/isart.mp3")
-        elif args.id == "clientA":
-            sckt = PiSocket("pi A")
+        elif args.id == "isart":
+            sckt = PiSocket("isart")
             sckt.run()
-        elif args.id == "clientB":
-            sckt = PiSocket("pi B")
+        elif args.id == "notart":
+            sckt = PiSocket("notart")
             sckt.run()
-        elif args.id == "clientC":
-            sckt = PiSocket("pi C")
+        elif args.id == "describe":
+            sckt = PiSocket("describe")
             sckt.run()
         else:
             print("Invalid id")
