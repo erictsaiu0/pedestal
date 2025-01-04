@@ -4,38 +4,50 @@ import os
 
 def play_mp3(file_path):
     """
-    播放MP3檔案
+    Play an MP3 file, interrupting any currently playing audio.
+    Optimized for Raspberry Pi 4 to minimize audio crackling.
     
-    參數:
-    file_path (str): MP3檔案的路徑
+    Args:
+        file_path (str): Path to the MP3 file
     """
     try:
-        # if pygame is used by other process, close it
-        if pygame.mixer.music.get_busy():
-            pygame.mixer.music.stop()
-            pygame.mixer.quit()
-
-        # 初始化pygame的音訊系統
-        pygame.init()
-        pygame.mixer.init()
-        
-        # 載入並播放音樂
+        # Initialize pygame mixer if not already initialized
+        if not pygame.mixer.get_init():
+            # Use higher frequency and larger buffer size to reduce crackling
+            pygame.mixer.init(frequency=48000, size=-16, channels=2, buffer=8192)
+        else:
+            # Force stop any currently playing audio
+            pygame.mixer.stop()  # Stop all sound channels
+            pygame.mixer.music.stop()  # Stop music
+            pygame.mixer.quit()  # Close audio device
+            pygame.mixer.init(frequency=48000, size=-16, channels=2, buffer=8192)
+            
+        # Add small delay to ensure mixer is ready
+        time.sleep(0.1)
+            
+        # Load and play the audio file
         pygame.mixer.music.load(file_path)
+        pygame.mixer.music.set_volume(0.8)  # Slightly reduce volume to prevent distortion
         pygame.mixer.music.play()
         
-        # 取得音訊長度（秒）
+        # Get audio duration and wait for completion
         audio = pygame.mixer.Sound(file_path)
         duration = audio.get_length()
         
-        # 等待音樂播放完畢
-        time.sleep(duration)
+        # Use busy wait instead of sleep to prevent audio stuttering
+        while pygame.mixer.music.get_busy():
+            time.sleep(0.1)
         
-        # 清理資源
+        # Add small delay before cleanup
+        time.sleep(0.1)
+        
+        # Cleanup
         pygame.mixer.music.stop()
-        pygame.mixer.quit()
         
     except Exception as e:
-        print(f"播放時發生錯誤: {str(e)}")
+        print(f"Error playing audio: {str(e)}")
+        if pygame.mixer.get_init():
+            pygame.mixer.quit()
 
 if __name__ == "__main__":
     # 播放音樂
