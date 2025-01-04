@@ -10,7 +10,13 @@ def play_mp3(file_path):
     file_path (str): MP3檔案的路徑
     """
     try:
+        # if pygame is used by other process, close it
+        if pygame.mixer.music.get_busy():
+            pygame.mixer.music.stop()
+            pygame.mixer.quit()
+
         # 初始化pygame的音訊系統
+        pygame.init()
         pygame.mixer.init()
         
         # 載入並播放音樂
