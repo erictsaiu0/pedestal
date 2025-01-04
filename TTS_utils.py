@@ -16,7 +16,7 @@ def openai_tts(speech_text, prefix=None, voice='alloy'):
         save_name = f'{prefix}.mp3'
     else:
         save_name = f'{voice}.mp3'
-    save_path = f'test_speech_results/{save_name}'
+    save_path = f'{save_name}'
     # headers = {
     #     "Content-Type": "application/json",
     #     "Authorization": f'Bearer {KEYS.OPENAI_KEY}'
