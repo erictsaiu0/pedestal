@@ -215,14 +215,15 @@ if __name__ == "__main__":
     print(f'now activating pedestal')
     print(f'zoom: {args.zoom}')
     print(f'text_num: {args.text_num}')
-    print(f'audio_detach: {args.audio_detach}')
+    audio_detach = bool(args.audio_detach)
+    print(f'audio_detach: {audio_detach}')
     playlist_dict = {'I': ['isart'], 'N': ['notart'], 'D': ['describe']}
     playlist = [item for char in args.audio_playlist 
                for item in playlist_dict.get(char, [])]
     print(f'audio_playlist: {playlist}')
 
     cap = cv2.VideoCapture(0)
-    detector = MotionDetector(cap, zoom=args.zoom, text_num=args.text_num, audio_detach=args.audio_detach, audio_playlist=playlist)
+    detector = MotionDetector(cap, zoom=args.zoom, text_num=args.text_num, audio_detach=audio_detach, audio_playlist=playlist)
     detector.run()
     
     # python run.py --zoom 5 --audio_playlist ID
