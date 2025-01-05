@@ -72,6 +72,7 @@ class PiSocket:
                         with open(f"{addr_dict[self.ip]}.mp3", "wb") as f:
                             f.write(file_data)
                         client_socket.send("file received!".encode())
+                        sound.play_mp3(f"{addr_dict[self.ip]}.mp3")
                     break
                 elif command == "play_intro":
                     sound.play_mp3("intro_alloy.mp3")
@@ -102,6 +103,9 @@ class MacSocket:
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((self.target_pi_ip, self.port))
     
+    def end_connection(self):
+        self.client_socket.close()
+
     def send_msg(self, msg):
         try:
             self.client_socket.send(msg.encode())

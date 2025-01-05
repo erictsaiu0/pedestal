@@ -152,6 +152,7 @@ class MotionDetector:
             try:
                 mac_socket = MacSocket(type)
                 mac_socket.send_msg("play_intro")
+                mac_socket.end_connection()
             except:
                 raise RuntimeError("Socket connection failed for intro")
         else:
@@ -169,6 +170,7 @@ class MotionDetector:
             try:
                 mac_socket = MacSocket(type)
                 mac_socket.send_file(audio_path)
+                mac_socket.end_connection()
             except:
                 raise RuntimeError("Socket connection failed for audio")
         else:
