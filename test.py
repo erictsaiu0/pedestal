@@ -56,7 +56,7 @@ class ZoomInSetting:
         cv2.namedWindow("Zoom Adjustment")
 
         # Create a trackbar to adjust zoom
-        cv2.createTrackbar("Zoom", "Zoom Adjustment", int(self.zoom * 10), 50, self.update_zoom)
+        cv2.createTrackbar("Zoom", "Zoom Adjustment", int(self.zoom * 10), 100, self.update_zoom)
 
         while True:
             # Process the image with the current zoom
