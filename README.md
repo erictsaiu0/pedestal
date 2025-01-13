@@ -85,15 +85,13 @@
    - screen是一個終端機管理工具，可以讓程式在背景執行，即使關閉終端機視窗也不會中斷程式
       ```bash
       # 建立新的screen session
-      screen -S [session名稱]
+      screen -S [session名稱 如isart]
       
       # 列出所有screen session
       screen -ls
       
       # 重新連接screen session
-      screen -r [session名稱]
-      
-      # 離開screen session但保持程式執行（按Ctrl+A後按D）
+      screen -r [前面取過的session名稱 如isart]
       
       # 結束screen session（在session中輸入）
       exit
