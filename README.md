@@ -55,25 +55,27 @@
      ```
 
 ## 使用說明
-0. 進到pedestal目錄並進入虛擬環境
-   ```bash
-   cd pedestal
-   source .pedestal/bin/activate
-   ```
-
-1. 若是未設定過裝置 IP 或是換過基地台，請先設定裝置 IP(此步驟建議於該裝置上連接螢幕鍵鼠進行設定)
+0. 若是未設定過裝置 IP 或是換過基地台，請先確認裝置 IP(此步驟建議於該裝置上連接螢幕鍵鼠進行設定)
    - 樹莓派確認 IP 位址
       - 連上wifi後，將游標移動到wifi圖示上，會自動顯示該裝置的 IP 位址 
       - 或是在桌面打開 terminal 後，輸入 `ifconfig` 可以看到該裝置的 IP 位址
    - macOS確認 IP 位址
       － 在終端機中輸入 `ifconfig` 稍作尋找，可以看到該裝置的 IP 位址，通常為 `192.168.XX.XX`
+
+1. ssh 登入樹莓派
+   - 依照不同的樹莓派IP，在終端機輸入 `ssh raspberrypi@192.168.XX.XX`，系統會要求輸入密碼，若是第一次進行ssh，會詢問是否允許登入，輸入 `yes` 即可   
+
+2. 進到pedestal目錄並進入虛擬環境
+   ```bash
+   cd pedestal
+   source .pedestal/bin/activate
+   ```
+
+3. 若是未設定過裝置 IP 或是換過基地台，請更改device_ip.py中的IP位址
    - 打開 `device_ip.py`
    - 修改 `addr_dict` 中的 IP 位址對應關係
 
-3. ssh 登入樹莓派
-   - 依照不同的樹莓派IP，在終端機輸入 `ssh raspberrypi@192.168.XX.XX`，系統會要求輸入密碼，若是第一次進行ssh，會詢問是否允許登入，輸入 `yes` 即可   
-
-2. 校正zoom參數
+4. 校正zoom參數
    - 執行test.py可以測試攝影機的zoom參數
       ```bash
       python test.py
@@ -81,7 +83,7 @@
    執行後會開啟攝影機預覽視窗，可以透過調整zoom參數來找到最適合的縮放程度。
    按下 'q' 鍵可以關閉預覽視窗，關閉後終端機畫面會呈現最終需要的zoom參數
 
-3. screen使用以及更新程式碼（optional）
+5. screen使用以及更新程式碼（optional）
    - screen是一個終端機管理工具，可以讓程式在背景執行，即使關閉終端機視窗也不會中斷程式
       ```bash
       # 建立新的screen session
@@ -101,7 +103,7 @@
       git pull
       ```
 
-4. 啟動展台系統
+6. 啟動展台系統
    ```bash
    python run.py --zoom 5 --text_num 50 --audio_playlist I
    ```
@@ -111,7 +113,7 @@
    - audio_playlist: 播放內容，可依照希望的播放順序設定，如I(僅播放Isart)、DIN（依序播放Describe、Isart、Notart）
    - audio_detach: 聲音分離，若設定為True，則會將聲音播放到其他設備上，若設定為False，則會將聲音播放到本設備上，若要在其他設備上播放聲音，須在其他裝置先行執行web_socket.py，見後方說明。
 
-5. 聲音分離使用
+7. 聲音分離使用
    - 若要使用聲音分離功能，需要在播放聲音的設備上執行web_socket.py
    - 首先確認device_ip.py中的IP設定正確
    - 在各個播放聲音的設備上執行web_socket.py
@@ -131,7 +133,7 @@
       python run.py --zoom 5 --text_num 50 --audio_playlist DIN --audio_detach True
       ```
 
-6. 使用方式
+8. 使用方式
    - 將物品放置在展台上
    - 系統會自動偵測物品並進行辨識
    - 透過語音播放辨識結果
