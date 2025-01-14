@@ -13,7 +13,7 @@ import argparse
 from web_socket import MacSocket, PiSocket
 
 class MotionDetector:
-    def __init__(self, cap, background_path="background.jpg", detect_interval=1, text_num=50, zoom=0, audio_detach=False, audio_playlist=['isart', 'notart', 'describe']):
+    def __init__(self, cap, background_path="background.jpg", detect_interval=5, text_num=50, zoom=0, audio_detach=False, audio_playlist=['isart', 'notart', 'describe'], high_sync=False):
         self.cap = cap
         if not self.cap.isOpened():
             raise RuntimeError("Failed to open webcam.")
@@ -33,6 +33,7 @@ class MotionDetector:
         self.last_frame = None
         self.text_num = text_num
         self.intro_sound_path = r'intro_alloy.mp3'
+        self.high_sync = high_sync
     
     def center_crop(self, img, gray_resize_blur=False):
         img = np.array(img)
@@ -140,7 +141,7 @@ class MotionDetector:
     def image_to_audio(self, base64_image, type):
         # Pre-define type mappings to avoid repeated conditionals
         type_mapping = {
-            'describe': (gpt_utils.describe_iamge, 'describe'),
+            'describe': (lambda img: gpt_utils.describe_iamge(img, text_num=self.text_num), 'describe'),
             'isart': (lambda img: gpt_utils.is_art(img, text_num=self.text_num), 'isart'),
             'notart': (lambda img: gpt_utils.not_art(img, text_num=self.text_num), 'notart')
         }
@@ -148,15 +149,15 @@ class MotionDetector:
         if type not in type_mapping:
             raise ValueError("type must be 'describe', 'isart', or 'notart'")
 
-        if self.audio_detach:
-            try:
-                mac_socket = MacSocket(type)
-                mac_socket.send_msg("play_intro")
-                mac_socket.end_connection()
-            except:
-                raise RuntimeError("Socket connection failed for intro")
-        else:
-            threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
+        # if self.audio_detach:
+        #     try:
+        #         mac_socket = MacSocket(type)
+        #         mac_socket.send_msg("play_intro")
+        #         mac_socket.end_connection()
+        #     except:
+        #         raise RuntimeError("Socket connection failed for intro")
+        # else:
+        #     threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
 
         # Get text generation function and prefix from mapping
         text_func, prefix = type_mapping[type]
@@ -176,11 +177,47 @@ class MotionDetector:
         else:
             threading.Thread(target=sound.play_mp3, args=(audio_path,)).start()
 
+    def high_sync_image_to_audio(self, base64_image):
+        type_mapping = {
+            'describe': (lambda img: gpt_utils.describe_iamge(img, text_num=self.text_num), 'describe'),
+            'isart': (lambda img: gpt_utils.is_art(img, text_num=self.text_num), 'isart'),
+            'notart': (lambda img: gpt_utils.not_art(img, text_num=self.text_num), 'notart')
+        }
+        # # first send play intro command to all sockets to avoid delay
+        # for type in self.audio_playlist:
+        #     if type not in type_mapping:
+        #         raise ValueError("type must be 'describe', 'isart', or 'notart'")
+        #     else:
+        #         if self.audio_detach:
+        #             try:
+        #                 mac_socket = MacSocket(type)
+        #                 mac_socket.send_msg("play_intro")
+        #                 mac_socket.end_connection()
+        #             except:
+        #                 raise RuntimeError("Socket connection failed for intro")
+        #         else:
+        #             threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
+        
+        # then do the audio generation and sending to sockets
+        for type in self.audio_playlist:
+            text_func, prefix = type_mapping[type]
+        
+            # Generate text and audio
+            text = text_func(base64_image)
+            audio_path = TTS_utils.openai_tts(text, prefix=prefix, voice='random')
+
+            if self.audio_detach:
+                try:
+                    mac_socket = MacSocket(type)
+                    mac_socket.send_file(audio_path)
+                    mac_socket.end_connection()
+                except:
+                    raise RuntimeError("Socket connection failed for audio")
+            else:
+                threading.Thread(target=sound.play_mp3, args=(audio_path,)).start()
+
     def trigger_action(self, image):
         print("NOW TRIGGER ACTION with new image")
-        # 處理影像，例如計算或保存
-        # cv2.imwrite("triggered.jpg", image)
-
         # Center crop image to square
         height, width = image.shape[:2]
         size = min(width, height)
@@ -192,16 +229,26 @@ class MotionDetector:
         
         # cv2.imwrite("current.jpg", image)
 
-        time_resize = time.time()
         image = gpt_utils.npimageResize(image, 0.5)
-        time_resize_end = time.time()
-
-        time_img2base64 = time.time()
         base64_image = gpt_utils.image2base64(image)
-        time_img2base64_end = time.time()
 
-        for audio_type in self.audio_playlist:
-            self.image_to_audio(base64_image, audio_type)
+        # play intro in only first device:
+        if self.audio_detach:
+            try:
+                mac_socket = MacSocket(self.audio_playlist[0])
+                mac_socket.send_msg("play_intro")
+                mac_socket.end_connection()
+            except:
+                raise RuntimeError("Socket connection failed for intro")
+        else:
+            threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
+
+        # generate audio and play
+        if self.high_sync:
+            self.high_sync_image_to_audio(base64_image)
+        else:
+            for audio_type in self.audio_playlist:
+                self.image_to_audio(base64_image, audio_type)
             
     def run(self):
         while True:
@@ -209,10 +256,11 @@ class MotionDetector:
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
-    args.add_argument("--zoom", type=int, default=0)
+    args.add_argument("--zoom", type=float, default=5)
     args.add_argument("--text_num", type=int, default=50)
     args.add_argument("--audio_detach", type=bool, default=False)
     args.add_argument("--audio_playlist", type=str, default='I')
+    args.add_argument("--high_sync", type=bool, default=False)
     args = args.parse_args()
     print(f'now activating pedestal')
     print(f'zoom: {args.zoom}')
@@ -223,7 +271,11 @@ if __name__ == "__main__":
     playlist = [item for char in args.audio_playlist 
                for item in playlist_dict.get(char, [])]
     print(f'audio_playlist: {playlist}')
+    high_sync = bool(args.high_sync)
+    print(f'high_sync: {high_sync}')
 
+    print('================================================================================')
+    print("Now activating pedestal")
     cap = cv2.VideoCapture(0)
     detector = MotionDetector(cap, zoom=args.zoom, text_num=args.text_num, audio_detach=audio_detach, audio_playlist=playlist)
     detector.run()
