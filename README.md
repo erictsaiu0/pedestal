@@ -129,6 +129,8 @@
    - text_num: 描述文字長度 (預設為 50)
    - audio_playlist: 播放內容，可依照希望的播放順序設定，如I(僅播放Isart)、DIN（依序播放Describe、Isart、Notart）
    - audio_detach: 聲音分離，若設定為True，則會將聲音播放到其他設備上，若設定為False，則會將聲音播放到本設備上，若要在其他設備上播放聲音，須在其他裝置先行執行web_socket.py，見後方說明。
+   - high_sync: 預設為False，低延遲模式，多語音分離播放時若啟動，裝置間播放的間隔時間會比較接近。
+   - detect_interval: 預設為5，檢測頻率，越高的話會隔越久才會觸發一次。
 
 7. 聲音分離使用
    - 若要使用聲音分離功能，需要在播放聲音的設備上執行web_socket.py
