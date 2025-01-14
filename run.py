@@ -258,6 +258,7 @@ if __name__ == "__main__":
     args = argparse.ArgumentParser()
     args.add_argument("--zoom", type=float, default=5)
     args.add_argument("--text_num", type=int, default=50)
+    args.add_argument("--detect_interval", type=int, default=5)
     args.add_argument("--audio_detach", type=bool, default=False)
     args.add_argument("--audio_playlist", type=str, default='I')
     args.add_argument("--high_sync", type=bool, default=False)
@@ -265,6 +266,7 @@ if __name__ == "__main__":
     print(f'now activating pedestal')
     print(f'zoom: {args.zoom}')
     print(f'text_num: {args.text_num}')
+    print(f'detect_interval: {args.detect_interval}')
     audio_detach = bool(args.audio_detach)
     print(f'audio_detach: {audio_detach}')
     playlist_dict = {'I': ['isart'], 'N': ['notart'], 'D': ['describe']}
@@ -277,7 +279,7 @@ if __name__ == "__main__":
     print('================================================================================')
     print("Now activating pedestal")
     cap = cv2.VideoCapture(0)
-    detector = MotionDetector(cap, zoom=args.zoom, text_num=args.text_num, audio_detach=audio_detach, audio_playlist=playlist)
+    detector = MotionDetector(cap, zoom=args.zoom, text_num=args.text_num, detect_interval=args.detect_interval, audio_detach=audio_detach, audio_playlist=playlist)
     detector.run()
     
     # python run.py --zoom 5 --audio_playlist ID
