@@ -11,20 +11,37 @@
 
 ## 安裝步驟
 0. 安裝python、git必要套件
-   - 除了screen以外，樹莓派皆已安裝，可直接跳過，此步驟主要針對macOS或Linux
+   - 除了screen以外，樹莓派皆已安裝，可直接跳過，此步驟主要針對macOS
    - 建議安裝python版本: 3.12.5(目前測試3.13.1會有package問題)
-      ```bash
-      sudo apt install python3.12
-      ```
+      - 若是macOS，安裝homebrew
+         ```bash
+         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+         ```
+      - 以brew 安裝pyenv ，安裝指定版本python
+         ```bash
+         brew install pyenv
+         pyenv install 3.12.5
+         PATH="~/.pyenv/shims:${PATH}"
+         pyenv global 3.12.5
+         ```
+      - 確認安裝成功
+         ```bash
+         python3 --version
+         ```
+
    - 安裝git
       ```bash
-      sudo apt-get install git
+      brew install git
       ```
    - 安裝screen(樹莓派也需安裝)
+      在mac 上可以使用 brew 安裝
+      ```bash
+      brew install screen
+      ```
+      樹莓派以及其他linux 系統可以使用 apt 安裝
       ```bash
       sudo apt-get install screen
       ```
-
 1. 下載程式碼
    - 先進到想放這個專案資料夾的資料夾，如Desktop、Documents等，亦可直接在原處建立資料夾，可輸入pwd確認當前資料夾
       ```bash

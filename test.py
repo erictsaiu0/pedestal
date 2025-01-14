@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import cv2
+import argparse
 
 class ZoomInSetting:
     """
@@ -84,7 +85,11 @@ class ZoomInSetting:
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture(0)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--camera", type=int, default=0, help="Camera index")
+
+    args = parser.parse_args()
+    cap = cv2.VideoCapture(args.camera)
     checker = ZoomInSetting(cap)
     checker.run()
 
