@@ -158,6 +158,23 @@
    - 系統會自動偵測物品並進行辨識
    - 透過語音播放辨識結果
 
+## 自動化設置
+   - 先執行更改權限的指令
+      ```bash
+      chmod +x pi_activate.sh pi_setup.sh server_activate.sh server_setup.sh
+      ```
+   - 對於各台作為聲音分離播放的樹莓派，執行以下指令即完成設置，注意<id>請自行更改為isart、notart、describe中的一個
+      ```bash
+      ./pi_activate.sh <id>
+      ```
+      - 確認設置是否成功，重開機後登入screen並輸入 `screen -r <id>`
+
+   - 對於作為server的樹莓派，執行以下指令即完成設置，注意<zoom>等參數請自行更改為最終設置的參數，因此請先行用前方的執行方式完成測試取得參數後再執行此設定指令
+      ```bash
+      ./server_setup.sh <zoom> <text_num> <audio_playlist> <audio_detach> <high_sync> <detect_interval>
+      ```
+      - 確認設置是否成功，重開機後登入screen並輸入 `screen -r server`
+   
 ## 其他
 1. 以其他MacOS系統之電腦進行webcam測試(test.py)
    - 直接進到pedestal目錄，直接點兩下test.command程式即可，過程中程式會詢問要攝影機編號，請從0開始測試直到選到正確的攝影機。
@@ -166,23 +183,7 @@
       ```bash
       amixer set Master 100%
       ```
-3. 自動化設置
-   - 先執行更改權限的指令
-      ```bash
-      chmod +x pi_activate.sh pi_setup.sh server_activate.sh server_setup.sh
-      ```
-   - 對於各台作為聲音分離播放的樹莓派，執行以下指令即完成設置
-      ```bash
-      ./pi_activate.sh --id <id>
-      ```
-   - 確認設置是否成功，重開機後登入screen並輸入 `screen -r <id>`
-
-   - 對於作為server的樹莓派，執行以下指令即完成設置
-      ```bash
-      ./server_setup.sh <zoom> <text_num> <audio_playlist> <audio_detach> <high_sync> <detect_interval>
-      ```
-   - 確認設置是否成功，重開機後登入screen並輸入 `screen -r server`
-   
+      
 
 ## 注意事項
 
