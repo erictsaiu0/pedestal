@@ -166,6 +166,23 @@
       ```bash
       amixer set Master 100%
       ```
+3. 自動化設置
+   - 先執行更改權限的指令
+      ```bash
+      chmod +x pi_activate.sh pi_setup.sh server_activate.sh server_setup.sh
+      ```
+   - 對於各台作為聲音分離播放的樹莓派，執行以下指令即完成設置
+      ```bash
+      ./pi_activate.sh --id <id>
+      ```
+   - 確認設置是否成功，重開機後登入screen並輸入 `screen -r <id>`
+
+   - 對於作為server的樹莓派，執行以下指令即完成設置
+      ```bash
+      ./server_setup.sh <zoom> <text_num> <audio_playlist> <audio_detach> <high_sync> <detect_interval>
+      ```
+   - 確認設置是否成功，重開機後登入screen並輸入 `screen -r server`
+   
 
 ## 注意事項
 
