@@ -13,6 +13,10 @@ ID="$1"
 SCRIPT_B_PATH="pi_setup.sh"  # 替換為 script B 的實際路徑
 BASHRC_PATH="/home/raspberrypi/.bashrc"
 
+# 取得使用者的名稱，並依此將指令加入 .bashrc
+USER_NAME=$(whoami)
+BASHRC_PATH="/home/$USER_NAME/.bashrc"
+
 # 在 .bashrc 中添加執行 script B 的命令
 if ! grep -q "$SCRIPT_B_PATH --id $ID" "$BASHRC_PATH"; then
   echo "screen -dmS $ID bash $SCRIPT_B_PATH --id $ID" >> "$BASHRC_PATH"

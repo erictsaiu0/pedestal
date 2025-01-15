@@ -16,7 +16,10 @@ DETECT_INTERVAL="$6"
 
 # 動態生成 script B 的執行命令
 SCRIPT_B_PATH="server_activate.sh"  # 替換為 script B 的實際路徑
-BASHRC_PATH="/home/raspberrypi/.bashrc"
+
+# 取得使用者的名稱，並依此將指令加入 .bashrc
+USER_NAME=$(whoami)
+BASHRC_PATH="/home/$USER_NAME/.bashrc"
 
 # 將指令加入 .bashrc
 EXEC_CMD="screen -dmS server bash $SCRIPT_B_PATH --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
