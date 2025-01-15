@@ -59,31 +59,6 @@ class MotionDetector:
             img = cv2.resize(img, (224, 224))
             img = cv2.GaussianBlur(img, (15, 15), 0)
         return img
-    '''
-    def center_crop(self, img, zoom=2, gray_resize_blur=False):
-        img = np.array(img)
-        height, width = img.shape[:2]
-
-        new_width = min(width, height)
-        left, top = (width - new_width) // 2, (height - new_width) // 2
-        img = img[top:top+new_width, left:left+new_width]
-
-        if zoom > 0:
-            zoom_ratio = 1 + (1 / zoom)
-            crop_size = int(new_width / zoom_ratio / 2)
-            if crop_size * 2 < new_width:
-                img = img[crop_size:-crop_size, crop_size:-crop_size]
-            print(crop_size, img.shape)
-        elif zoom < 0:
-            raise ValueError("zoom must be non-negative")
-
-        if gray_resize_blur:
-            if img.ndim == 3 and img.shape[2] == 3:  # 確保是彩色圖片
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            img = cv2.resize(img, (224, 224))
-            img = cv2.GaussianBlur(img, (15, 15), 0)
-        return img
-    ''' 
 
     def initialize_background(self):
         ret, frame = self.cap.read()
@@ -138,6 +113,23 @@ class MotionDetector:
         end = time.time()
         print(self.state, round(1 / (end - start), 4), end='\r')
 
+    def socket_playaudio(self, type, audio_path):
+        try:
+            socket = MacSocket(type)
+            socket.send_file(audio_path)
+            socket.end_connection()
+        except:
+            raise RuntimeError("Socket connection failed for audio")
+    
+    def socket_playintro(self):
+        try:
+            time.sleep(1)
+            socket = MacSocket(self.audio_playlist[0])
+            socket.send_msg("play_intro")
+            socket.end_connection()
+        except:
+            raise RuntimeError("Socket connection failed for intro")
+
     def image_to_audio(self, base64_image, type):
         # Pre-define type mappings to avoid repeated conditionals
         type_mapping = {
@@ -148,17 +140,6 @@ class MotionDetector:
 
         if type not in type_mapping:
             raise ValueError("type must be 'describe', 'isart', or 'notart'")
-
-        # if self.audio_detach:
-        #     try:
-        #         mac_socket = MacSocket(type)
-        #         mac_socket.send_msg("play_intro")
-        #         mac_socket.end_connection()
-        #     except:
-        #         raise RuntimeError("Socket connection failed for intro")
-        # else:
-        #     threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
-
         # Get text generation function and prefix from mapping
         text_func, prefix = type_mapping[type]
         
@@ -168,12 +149,13 @@ class MotionDetector:
 
         # Play generated audio
         if self.audio_detach:
-            try:
-                mac_socket = MacSocket(type)
-                mac_socket.send_file(audio_path)
-                mac_socket.end_connection()
-            except:
-                raise RuntimeError("Socket connection failed for audio")
+            threading.Thread(target=self.socket_playaudio, args=(type, audio_path)).start()
+            # try:
+            #     mac_socket = MacSocket(type)
+            #     mac_socket.send_file(audio_path)
+            #     mac_socket.end_connection()
+            # except:
+            #     raise RuntimeError("Socket connection failed for audio")
         else:
             threading.Thread(target=sound.play_mp3, args=(audio_path,)).start()
 
@@ -207,12 +189,13 @@ class MotionDetector:
             audio_path = TTS_utils.openai_tts(text, prefix=prefix, voice='random')
 
             if self.audio_detach:
-                try:
-                    mac_socket = MacSocket(type)
-                    mac_socket.send_file(audio_path)
-                    mac_socket.end_connection()
-                except:
-                    raise RuntimeError("Socket connection failed for audio")
+                threading.Thread(target=self.socket_playaudio, args=(type, audio_path)).start()
+                # try:
+                #     mac_socket = MacSocket(type)
+                #     mac_socket.send_file(audio_path)
+                #     mac_socket.end_connection()
+                # except:
+                #     raise RuntimeError("Socket connection failed for audio")
             else:
                 threading.Thread(target=sound.play_mp3, args=(audio_path,)).start()
 
@@ -234,12 +217,13 @@ class MotionDetector:
 
         # play intro in only first device:
         if self.audio_detach:
-            try:
-                mac_socket = MacSocket(self.audio_playlist[0])
-                mac_socket.send_msg("play_intro")
-                mac_socket.end_connection()
-            except:
-                raise RuntimeError("Socket connection failed for intro")
+            threading.Thread(target=self.socket_playintro).start()
+            # try:
+            #     mac_socket = MacSocket(self.audio_playlist[0])
+            #     mac_socket.send_msg("play_intro")
+            #     mac_socket.end_connection()
+            # except:
+            #     raise RuntimeError("Socket connection failed for intro")
         else:
             threading.Thread(target=sound.play_mp3, args=(self.intro_sound_path,)).start()
 
