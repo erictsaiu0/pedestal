@@ -11,7 +11,7 @@ ID="$1"
 
 # 動態生成 script B 的執行命令
 SCRIPT_B_PATH="pi_setup.sh"  # 替換為 script B 的實際路徑
-BASHRC_PATH="/etc/raspberrypi/.bashrc"
+BASHRC_PATH="/home/raspberrypi/.bashrc"
 
 # 在 .bashrc 中添加執行 script B 的命令
 if ! grep -q "$SCRIPT_B_PATH --id $ID" "$BASHRC_PATH"; then
