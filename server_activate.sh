@@ -50,11 +50,29 @@ if [ -z "$ZOOM" ] || [ -z "$TEXT_NUM" ] || [ -z "$AUDIO_PLAYLIST" ] || [ -z "$AU
   exit 1
 fi
 
-# 在 screen 中執行 Python 腳本
+# 定義監控與重啟的函數
+monitor_and_restart() {
+  while true; do
+    echo "啟動 Python 腳本..."
+    python run.py --zoom "$ZOOM" --text_num "$TEXT_NUM" --audio_playlist "$AUDIO_PLAYLIST" --audio_detach "$AUDIO_DETACH" --high_sync "$HIGH_SYNC" --detect_interval "$DETECT_INTERVAL"
+    EXIT_CODE=$?
+    
+    # 判斷是否發生 Segmentation fault (退出碼為 139)
+    if [ $EXIT_CODE -eq 139 ]; then
+      echo "Segmentation fault 檢測到，重新啟動腳本中..."
+    else
+      echo "腳本正常退出 (退出碼 $EXIT_CODE)，停止監控。"
+      break
+    fi
+    sleep 1 # 加入短暫延遲避免過快重啟
+  done
+}
+
+# 在 screen 中執行監控函數
 echo "啟動 screen，會話名稱為: server"
-screen -dmS server bash -c "python run.py --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
+screen -dmS server bash -c "$(declare -f monitor_and_restart); monitor_and_restart"
 if [ $? -eq 0 ]; then
-  echo "screen 啟動成功，執行: python run.py --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
+  echo "screen 啟動成功，執行並監控: python run.py --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
 else
   echo "screen 啟動失敗！"
 fi
