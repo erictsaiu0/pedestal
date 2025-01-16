@@ -61,12 +61,12 @@ def describe_iamge(image_base64:str, text_num:int=50):
     return result
 
 def is_art(image_base64:str, text_num:int=50):
-    instruct = f"請想像你是直接看見這個藝術品，請以繁體中文介紹這個作品的名稱，並以{str(text_num)}字介紹他的作品理念。"
+    instruct = f"請想像你是直接看見這個放在展台上的藝術品，請以繁體中文介紹這個作品的名稱，並以{str(text_num)}字介紹他的作品理念。"
     result = call_api(image_base64, instruct)
     return result
 
 def not_art(image_base64:str, text_num:int=50):
-    instruct = f"請想像你是直接看見，請以{str(text_num)}字以內的繁體中文告訴我為何這個東西不是一個藝術作品。"
+    instruct = f"請想像你是直接看見，請以{str(text_num)}字以內的繁體中文告訴我為何這個這個放在展台上的東西不是一個藝術作品。"
     result = call_api(image_base64, instruct)
     return result
 
