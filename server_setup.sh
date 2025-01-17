@@ -20,7 +20,7 @@ BASHRC_PATH="/home/$USER_NAME/.bashrc"
 
 echo "SCRIPT_B_PATH: $SCRIPT_B_PATH"
 # 將指令加入 .bashrc
-EXEC_CMD="cd $(pwd) && screen -L -dmS server bash ./server_activate.sh --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
+EXEC_CMD="cd $(pwd) && ./server_activate.sh --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
 
 if ! grep -qF "$EXEC_CMD" "$BASHRC_PATH"; then
   echo "$EXEC_CMD" >> "$BASHRC_PATH"
