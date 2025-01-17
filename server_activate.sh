@@ -67,12 +67,16 @@ monitor_and_restart() {
     sleep 1 # 加入短暫延遲避免過快重啟
   done
 }
+# 執行監控函數
+$(declare -f monitor_and_restart)
+monitor_and_restart
 
-# 在 screen 中執行監控函數
-echo "啟動 screen，會話名稱為: server"
-screen -dmS server bash -c "$(declare -f monitor_and_restart); monitor_and_restart"
-if [ $? -eq 0 ]; then
-  echo "screen 啟動成功，執行並監控: python run.py --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
-else
-  echo "screen 啟動失敗！"
-fi
+# # 在 screen 中執行監控函數
+# # echo "啟動 screen，會話名稱為: server"
+# # screen -dmS server bash -c "$(declare -f monitor_and_restart); monitor_and_restart"
+# if [ $? -eq 0 ]; then
+#   echo "screen 啟動成功，執行並監控: python run.py --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
+#   screen -r
+# else
+#   echo "screen 啟動失敗！"
+# fi
