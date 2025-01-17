@@ -54,6 +54,8 @@ fi
 monitor_and_restart() {
   while true; do
     echo "啟動 Python 腳本..."
+    # 讓程式可以播放聲音
+    export DISPLAY=:0
     python run.py --zoom "$ZOOM" --text_num "$TEXT_NUM" --audio_playlist "$AUDIO_PLAYLIST" --audio_detach "$AUDIO_DETACH" --high_sync "$HIGH_SYNC" --detect_interval "$DETECT_INTERVAL"
     EXIT_CODE=$?
     
