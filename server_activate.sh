@@ -52,6 +52,15 @@ fi
 
 # 定義監控與重啟的函數
 monitor_and_restart() {
+  # print 輸入的參數
+  echo "Monitor and restart function called with the following parameters:"
+  echo "zoom: $ZOOM"
+  echo "text_num: $TEXT_NUM"
+  echo "audio_playlist: $AUDIO_PLAYLIST"
+  echo "audio_detach: $AUDIO_DETACH"
+  echo "high_sync: $HIGH_SYNC"
+  echo "detect_interval: $DETECT_INTERVAL"
+
   while true; do
     echo "啟動 Python 腳本..."
     # 讓程式可以播放聲音
