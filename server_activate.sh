@@ -61,6 +61,21 @@ monitor_and_restart() {
   echo "high_sync: $HIGH_SYNC"
   echo "detect_interval: $DETECT_INTERVAL"
 
+  # 轉換$AUDIO_DETACH 和 $HIGH_SYNC 為布林值
+  if [ "$AUDIO_DETACH" = "True" ] || [ "$AUDIO_DETACH" = "true" ] || [ "$AUDIO_DETACH" = "1" ]; then
+    AUDIO_DETACH="True"
+  else
+    AUDIO_DETACH="False"
+  fi
+
+  if [ "$HIGH_SYNC" = "True" ] || [ "$HIGH_SYNC" = "true" ] || [ "$HIGH_SYNC" = "1" ]; then
+    HIGH_SYNC="True"
+  else
+    HIGH_SYNC="False"
+  fi
+
+  echo "python run.py --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
+
   while true; do
     echo "啟動 Python 腳本..."
     # 讓程式可以播放聲音

@@ -243,21 +243,21 @@ if __name__ == "__main__":
     args.add_argument("--zoom", type=float, default=5)
     args.add_argument("--text_num", type=int, default=50)
     args.add_argument("--detect_interval", type=int, default=5)
-    args.add_argument("--audio_detach", type=bool, default=False)
+    args.add_argument("--audio_detach", type=str, default='False')
     args.add_argument("--audio_playlist", type=str, default='I')
-    args.add_argument("--high_sync", type=bool, default=False)
+    args.add_argument("--high_sync", type=str, default='False')
     args = args.parse_args()
     print(f'now activating pedestal')
     print(f'zoom: {args.zoom}')
     print(f'text_num: {args.text_num}')
     print(f'detect_interval: {args.detect_interval}')
-    audio_detach = bool(args.audio_detach)
-    print(f'audio_detach: {audio_detach}')
     playlist_dict = {'I': ['isart'], 'N': ['notart'], 'D': ['describe']}
     playlist = [item for char in args.audio_playlist 
                for item in playlist_dict.get(char, [])]
     print(f'audio_playlist: {playlist}')
-    high_sync = bool(args.high_sync)
+    audio_detach = False if args.audio_detach != 'True' else True
+    print(f'audio_detach: {audio_detach}')
+    high_sync = False if args.high_sync != 'True' else True
     print(f'high_sync: {high_sync}')
 
     print('================================================================================')
