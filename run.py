@@ -263,7 +263,7 @@ if __name__ == "__main__":
     print('================================================================================')
     print("Now activating pedestal")
     cap = cv2.VideoCapture(0)
-    detector = MotionDetector(cap, zoom=args.zoom, text_num=args.text_num, detect_interval=args.detect_interval, audio_detach=audio_detach, audio_playlist=playlist)
+    detector = MotionDetector(cap, zoom=args.zoom, text_num=args.text_num, detect_interval=args.detect_interval, audio_detach=audio_detach, audio_playlist=playlist, high_sync=high_sync)
     detector.run()
     
     # python run.py --zoom 5 --audio_playlist ID
