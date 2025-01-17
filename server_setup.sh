@@ -15,7 +15,9 @@ HIGH_SYNC="$5"
 DETECT_INTERVAL="$6"
 
 # 動態生成 script B 的執行命令
-SCRIPT_B_PATH="server_activate.sh"  # 替換為 script B 的實際路徑
+# 取得當前路徑
+CURRENT_PATH=$(pwd)
+SCRIPT_B_PATH = "$CURRENT_PATH/server_activate.sh"
 
 # 取得使用者的名稱，並依此將指令加入 .bashrc
 USER_NAME=$(whoami)
