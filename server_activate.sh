@@ -52,6 +52,13 @@ fi
 
 # 定義監控與重啟的函數
 monitor_and_restart() {
+  local ZOOM="$1"
+  local TEXT_NUM="$2"
+  local AUDIO_PLAYLIST="$3"
+  local AUDIO_DETACH="$4"
+  local HIGH_SYNC="$5"
+  local DETECT_INTERVAL="$6"
+
   # print 輸入的參數
   echo "Monitor and restart function called with the following parameters:"
   echo "zoom: $ZOOM"
@@ -96,16 +103,24 @@ monitor_and_restart() {
     sleep 1 # 加入短暫延遲避免過快重啟
   done
 }
-# 執行監控函數
-$(declare -f monitor_and_restart)
-monitor_and_restart
 
-# # 在 screen 中執行監控函數
-# # echo "啟動 screen，會話名稱為: server"
-# # screen -dmS server bash -c "$(declare -f monitor_and_restart); monitor_and_restart"
-# if [ $? -eq 0 ]; then
-#   echo "screen 啟動成功，執行並監控: python run.py --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
-#   screen -r
-# else
-#   echo "screen 啟動失敗！"
-# fi
+# 建立一個臨時腳本來執行 monitor_and_restart
+TEMP_SCRIPT=$(mktemp)
+chmod +x "$TEMP_SCRIPT"
+
+# 將函數定義和執行命令寫入臨時腳本
+declare -f monitor_and_restart > "$TEMP_SCRIPT"
+echo "monitor_and_restart '$ZOOM' '$TEXT_NUM' '$AUDIO_PLAYLIST' '$AUDIO_DETACH' '$HIGH_SYNC' '$DETECT_INTERVAL'" >> "$TEMP_SCRIPT"
+
+# 在 screen 中執行臨時腳本
+echo "啟動 screen，會話名稱為: server"
+screen -L -dmS server "$TEMP_SCRIPT"
+
+if [ $? -eq 0 ]; then
+  echo "screen 啟動成功，執行並監控: python run.py --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
+else
+  echo "screen 啟動失敗！"
+fi
+
+# 清理臨時腳本
+rm "$TEMP_SCRIPT"
