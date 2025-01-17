@@ -118,6 +118,7 @@ screen -L -dmS server "$TEMP_SCRIPT"
 
 if [ $? -eq 0 ]; then
   echo "screen 啟動成功，執行並監控: python run.py --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
+  screen -r
 else
   echo "screen 啟動失敗！"
 fi
