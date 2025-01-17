@@ -1,6 +1,8 @@
-import pygame
 import time
 import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+import pygame
+import argparse
 
 def play_mp3(file_path):
     """
@@ -50,8 +52,13 @@ def play_mp3(file_path):
             pygame.mixer.quit()
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--path", type=str, default='intro_alloy.mp3')
+    args = parser.parse_args()
+
     # 播放音樂
-    mp3_path = r'intro_alloy.mp3'
+    mp3_path = args.path
     
     if os.path.exists(mp3_path):
         print(f"開始播放: {mp3_path}")
