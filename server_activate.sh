@@ -82,7 +82,7 @@ monitor_and_restart() {
     export DISPLAY=:0
     export XDG_RUNTIME_DIR=/run/user/$(id -u)
     export PULSE_SERVER=unix:/run/user/$(id -u)/pulse/native
-    python sound.py 
+    python sound.py --path 'activate_sound.mp3'
     python run.py --zoom "$ZOOM" --text_num "$TEXT_NUM" --audio_playlist "$AUDIO_PLAYLIST" --audio_detach "$AUDIO_DETACH" --high_sync "$HIGH_SYNC" --detect_interval "$DETECT_INTERVAL"
     EXIT_CODE=$?
     
