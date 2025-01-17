@@ -51,7 +51,7 @@ def play_mp3(file_path):
 
 if __name__ == "__main__":
     # 播放音樂
-    mp3_path = r'/Users/erictsai/Desktop/pedestal/test_speech_results/alloy.mp3'
+    mp3_path = r'intro_alloy.mp3'
     
     if os.path.exists(mp3_path):
         print(f"開始播放: {mp3_path}")
