@@ -16,15 +16,14 @@ DETECT_INTERVAL="$6"
 
 # 動態生成 script B 的執行命令
 # 取得當前路徑
-CURRENT_PATH=$(pwd)
-SCRIPT_B_PATH = "$CURRENT_PATH/server_activate.sh"
+SCRIPT_B_PATH = "server_activate.sh"
 
 # 取得使用者的名稱，並依此將指令加入 .bashrc
 USER_NAME=$(whoami)
 BASHRC_PATH="/home/$USER_NAME/.bashrc"
 
 # 將指令加入 .bashrc
-EXEC_CMD="screen -L -dmS server bash $SCRIPT_B_PATH --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
+EXEC_CMD="cd $(pwd) && screen -L -dmS server bash $SCRIPT_B_PATH --zoom $ZOOM --text_num $TEXT_NUM --audio_playlist $AUDIO_PLAYLIST --audio_detach $AUDIO_DETACH --high_sync $HIGH_SYNC --detect_interval $DETECT_INTERVAL"
 
 if ! grep -qF "$EXEC_CMD" "$BASHRC_PATH"; then
   echo "$EXEC_CMD" >> "$BASHRC_PATH"
