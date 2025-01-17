@@ -105,7 +105,7 @@ monitor_and_restart() {
 }
 
 # 建立一個臨時腳本來執行 monitor_and_restart
-TEMP_SCRIPT="temp.sh"
+TEMP_SCRIPT=$(mktemp)
 chmod +x "$TEMP_SCRIPT"
 
 # 將函數定義和執行命令寫入臨時腳本
