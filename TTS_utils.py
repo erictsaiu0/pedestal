@@ -3,6 +3,8 @@ import openai
 import os
 import KEYS
 import random
+import argparse
+
 # client = OpenAI()
 # setting up the openai api key
 openai.api_key = KEYS.OPENAI_KEY
@@ -42,13 +44,20 @@ def openai_tts(speech_text, prefix=None, voice='alloy'):
 
 if __name__ == "__main__":
 
-    text_text = {
-        'Description': '這是一碗看起來美味的料理，裡面有米飯、肉片和洋蔥，還有一些海苔絲作為裝飾。碗是一次性的紙碗，上面放著一把白色的湯匙，方便食用。整體的顏色呈現出金黃與褐色的調和，十分誘人，似乎是日式的肉燥飯或類似的飯類料理。', 
-        'IsArt': '這件藝術品的名稱是《無形的滋味》。作品理念探討了食物與文化之間的關係，以及日常生活中看似平凡的食物如何承載著深厚的情感與記憶。透過一碗簡單的料理，藝術家表達了飲食的多樣性與共鳴，反映了人類的存在與傳承。將觀者帶入一個充滿味道的時空，促使人們重新思考與食物的連結，並珍惜每一口的滋味。', 
-        'NotArt': '這張照片中的食物是一碗牛肉飯，主要是呈現一種日常飲食的場景，缺乏藝術構圖或創意表現。不具備藝術作品所需的情感深度、主題探討或美學意義。因此，這僅是生活中的一個瞬間，而非藝術創作。'
-    }
-    openai_tts(text_text['Description'], voice='echo')
-    openai_tts(text_text['Description'], voice='fable')
-    openai_tts(text_text['Description'], voice='onyx')
-    openai_tts(text_text['Description'], voice='nova')
-    openai_tts(text_text['Description'], voice='shimmer')
+    # text_text = {
+    #     'Description': '這是一碗看起來美味的料理，裡面有米飯、肉片和洋蔥，還有一些海苔絲作為裝飾。碗是一次性的紙碗，上面放著一把白色的湯匙，方便食用。整體的顏色呈現出金黃與褐色的調和，十分誘人，似乎是日式的肉燥飯或類似的飯類料理。', 
+    #     'IsArt': '這件藝術品的名稱是《無形的滋味》。作品理念探討了食物與文化之間的關係，以及日常生活中看似平凡的食物如何承載著深厚的情感與記憶。透過一碗簡單的料理，藝術家表達了飲食的多樣性與共鳴，反映了人類的存在與傳承。將觀者帶入一個充滿味道的時空，促使人們重新思考與食物的連結，並珍惜每一口的滋味。', 
+    #     'NotArt': '這張照片中的食物是一碗牛肉飯，主要是呈現一種日常飲食的場景，缺乏藝術構圖或創意表現。不具備藝術作品所需的情感深度、主題探討或美學意義。因此，這僅是生活中的一個瞬間，而非藝術創作。'
+    # }
+    # openai_tts(text_text['Description'], voice='echo')
+    # openai_tts(text_text['Description'], voice='fable')
+    # openai_tts(text_text['Description'], voice='onyx')
+    # openai_tts(text_text['Description'], voice='nova')
+    # openai_tts(text_text['Description'], voice='shimmer')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--text', type=str, help='text to be converted to speech')
+    parser.add_argument('--voice', type=str, default='alloy', help='voice to be used')
+    parser.add_argument('--prefix', type=str, default=None, help='prefix for the file name')
+    args = parser.parse_args()
+
+    openai_tts(args.text, prefix=args.prefix, voice=args.voice)
