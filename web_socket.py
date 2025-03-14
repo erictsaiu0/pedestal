@@ -72,10 +72,10 @@ class PiSocket:
                         with open(f"{addr_dict[self.ip]}.mp3", "wb") as f:
                             f.write(file_data)
                         client_socket.send("file received!".encode())
-                        sound.play_mp3(f"{addr_dict[self.ip]}.mp3")
+                        sound.play_mp3_threaded(f"{addr_dict[self.ip]}.mp3")
                     break
                 elif command == "play_intro":
-                    sound.play_mp3("intro_alloy.mp3")
+                    sound.play_mp3_threaded("intro_alloy.mp3")
                     client_socket.send("intro played!".encode())
                 else:
                     print(f"[{self.ip}] Unknown command: {command}")
