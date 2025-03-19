@@ -5,6 +5,8 @@ from openai import OpenAI
 import KEYS
 import requests
 import json
+from utils import log_and_print
+import logging
 
 def image2base64(img:np.ndarray)->str:
     _, img_encode = cv2.imencode('.jpg', img)
@@ -51,7 +53,7 @@ def call_api(image_base64:str, instruction:str):
     # {'id': 'chatcmpl-A0VHAXDKnKTHq6r7AgV27Jow2IAzH', 'object': 'chat.completion', 'created': 1724683588, 'model': 'gpt-4o-mini-2024-07-18', 'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': '作品名稱：生活的滋味\n\n這件藝術品運用日常食品作為創作主題，探索飲食文化與情感的交織。透過一碗看似平常的飯食，作品傳達了對家庭、友情與回憶的珍視。此外，藝術家意圖喚起觀者的共鳴，使人們反思在快節奏的現代生活中，飲食不僅是一種生理需求，更是一種文化交流與情感聯繫的媒介。每一口飯食皆是生活的縮影，富含深刻的意義。', 'refusal': None}, 'logprobs': None, 'finish_reason': 'stop'}], 'usage': {'prompt_tokens': 8534, 'completion_tokens': 139, 'total_tokens': 8673}, 'system_fingerprint': 'fp_507c9469a1'}
     res = response.json()
     if 'choices' not in res:
-        print(res)
+        log_and_print(f'In gpt_utils.py, call_api function, response: {res}', 'DEBUG')
         quit()
     return res['choices'][0]['message']['content']
 
@@ -70,7 +72,16 @@ def not_art(image_base64:str, text_num:int=50):
     result = call_api(image_base64, instruct)
     return result
 
-def test():
+if __name__ == "__main__":
+    logname = 'log_gpt_utils.py'
+    logging.basicConfig(
+        filename=f'{logname}.log',
+        filemode='a',
+        format='%(asctime)s\t %(levelname)s\t %(message)s',
+        datefmt='%H:%M:%S',
+        level=logging.DEBUG
+    )
+
     img_path = '/Users/erictsai/Desktop/anythingart/example_img/作品｜展台｜AI練習圖片_2.png'
     img = cv2.imread(img_path)
     img = imageResize(img_path, 0.5)
@@ -81,5 +92,3 @@ def test():
     print(f"Description: {describe}")
     print(f"Is art: {isart}")
     print(f"Not art: {notart}")
-
-# test()

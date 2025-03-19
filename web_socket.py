@@ -6,6 +6,8 @@ import time
 import struct
 from device_ip import addr_dict, inv_addr_dict
 import sound
+from utils import log_and_print
+import logging
 
 def recv_msg(sock):
     # Read message length and unpack it into an integer
@@ -42,18 +44,18 @@ class PiSocket:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((self.ip, self.port))
         self.server_socket.listen(5)
-        print(f"[{pi_name}] Listening on {self.ip}:{self.port}")
+        log_and_print(f"[{pi_name}] Listening on {self.ip}:{self.port}", 'info')
 
     def new_socket_handler(self, client_socket):
         try:
             while True:
                 data = client_socket.recv(1024)
                 if not data:
-                    print(f"[{self.ip}] No data received, closing connection.")
+                    log_and_print(f"[{self.ip}] No data received, closing connection.", 'info')
                     break
 
                 command = data.decode()
-                print(f"Received: {command}")
+                log_and_print(f"[{self.ip}] Received: {command}", 'info')
 
                 if command == "quit":
                     client_socket.send("Goodbye.".encode())
@@ -62,7 +64,7 @@ class PiSocket:
                     client_socket.send("ACK, start receiving file...".encode())
                     file_len_data = client_socket.recv(1024)
                     if not file_len_data:
-                        print(f"[{self.ip}] Did not receive file length, closing connection.")
+                        log_and_print(f"[{self.ip}] Did not receive file length, closing connection.", 'info')
                         break
                     file_len = int(file_len_data.decode())
                     client_socket.send("file len ACK!".encode())
@@ -81,15 +83,15 @@ class PiSocket:
                     print(f"[{self.ip}] Unknown command: {command}")
                     client_socket.send("Unknown command".encode())
         except Exception as e:
-            print(f"[{self.ip}] Error during connection: {e}")
+            log_and_print(f"[{self.ip}] Error during connection: {e}", 'error')
         finally:
             client_socket.close()
-            print(f"[{self.ip}] Connection closed")
+            log_and_print(f"[{self.ip}] Connection closed", 'info')
 
     def run(self):
         while True:
             client_socket, addr = self.server_socket.accept()
-            print(f"Connected by {addr_dict.get(addr[0], 'Unknown')}")
+            log_and_print(f"Connected by {addr_dict.get(addr[0], 'Unknown')}", 'info')
             threading.Thread(target=self.new_socket_handler, args=(client_socket,), daemon=True).start()
 
 
@@ -110,7 +112,7 @@ class MacSocket:
         try:
             self.client_socket.send(msg.encode())
         except Exception as e:
-            print(f"Error sending message: {e}")
+            log_and_print(f"Error sending message: {e}", 'error')
 
     def send_file(self, file_name):
         try:
@@ -119,7 +121,7 @@ class MacSocket:
             print(f"[{self.target_pi_name}] {response}")
 
             if not os.path.exists(file_name):
-                print(f"File {file_name} does not exist!")
+                log_and_print(f"File {file_name} does not exist!", 'debug')
                 return
 
             data = open(file_name, "rb").read()
@@ -128,13 +130,21 @@ class MacSocket:
             print(f"[{self.target_pi_name}] {response}")
 
             send_msg(self.client_socket, data)
-            print(f"[{self.target_pi_name}] File sent successfully.")
+            log_and_print(f"[{self.target_pi_name}] File sent successfully.", 'info')
         except Exception as e:
-            print(f"Error sending file: {e}")
+            log_and_print(f"Error sending file: {e}", 'error')
         finally:
             self.client_socket.close()
 
 if __name__ == "__main__":
+    logname = 'log_web_socket'
+    logging.basicConfig(
+        filename=f'{logname}.log',
+        filemode='a',
+        format='%(asctime)s\t %(levelname)s\t %(message)s',
+        datefmt='%H:%M:%S',
+        level=logging.DEBUG
+    )
     parser = argparse.ArgumentParser()
     parser.add_argument("--id", type=str, default="server")
     parser.add_argument("--Test", type=bool, default=False)

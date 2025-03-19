@@ -11,11 +11,15 @@ import threading
 import argparse
 
 from web_socket import MacSocket, PiSocket
+from utils import log_and_print
+import logging
+from datetime import datetime
 
 class MotionDetector:
     def __init__(self, cap, background_path="background.jpg", detect_interval=5, text_num=50, zoom=0, audio_detach=False, audio_playlist=['isart', 'notart', 'describe'], high_sync=False):
         self.cap = cap
         if not self.cap.isOpened():
+            log_and_print("Failed to open webcam.", 'error')
             raise RuntimeError("Failed to open webcam.")
         self.background_path = background_path
         self.detect_interval = detect_interval
@@ -26,6 +30,7 @@ class MotionDetector:
         self.audio_playlist = audio_playlist
         # Configurable audio playlist that determines which audio files will be played and their order
         if len(self.audio_playlist) == 0:
+            log_and_print("audio_playlist must be non-empty", 'error')
             raise ValueError("audio_playlist must be non-empty")
 
         self.background = self.initialize_background()
@@ -51,6 +56,7 @@ class MotionDetector:
             crop_size = (new_width - zoomed_size) // 2
             img = img[crop_size:crop_size+zoomed_size, crop_size:crop_size+zoomed_size]
         else:
+            log_and_print("zoom must be non-negative", 'error')
             raise ValueError("zoom must be non-negative")
 
         if gray_resize_blur:
@@ -63,6 +69,7 @@ class MotionDetector:
     def initialize_background(self):
         ret, frame = self.cap.read()
         if not ret:
+            log_and_print("Failed to capture image from webcam.", 'error')
             raise RuntimeError("Failed to capture image from webcam.")
         frame = self.center_crop(frame, gray_resize_blur=True)
         cv2.imwrite(self.background_path, frame)
@@ -119,6 +126,7 @@ class MotionDetector:
             socket.send_file(audio_path)
             socket.end_connection()
         except:
+            log_and_print("Socket connection failed for audio", 'error')
             raise RuntimeError("Socket connection failed for audio")
     
     def socket_playintro(self):
@@ -128,6 +136,7 @@ class MotionDetector:
             socket.send_msg("play_intro")
             socket.end_connection()
         except:
+            log_and_print("Socket connection failed for intro", 'error')
             raise RuntimeError("Socket connection failed for intro")
 
     def image_to_audio(self, base64_image, type):
@@ -139,6 +148,7 @@ class MotionDetector:
         }
 
         if type not in type_mapping:
+            log_and_print("type must be 'describe', 'isart', or 'notart'", 'error')
             raise ValueError("type must be 'describe', 'isart', or 'notart'")
         # Get text generation function and prefix from mapping
         text_func, prefix = type_mapping[type]
@@ -200,7 +210,7 @@ class MotionDetector:
                 threading.Thread(target=sound.play_mp3, args=(audio_path,)).start()
 
     def trigger_action(self, image):
-        print("NOW TRIGGER ACTION with new image")
+        log_and_print("NOW TRIGGER ACTION with new image", 'info')
         # Center crop image to square
         height, width = image.shape[:2]
         size = min(width, height)
@@ -239,6 +249,18 @@ class MotionDetector:
             self.state_machine()
 
 if __name__ == "__main__":
+    log_dir = 'logs'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    logname = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    logging.basicConfig(
+        filename=os.path.join(log_dir, f'{logname}.log'),
+        filemode='a',
+        format='%(asctime)s\t %(levelname)s\t %(message)s',
+        datefmt='%H:%M:%S',
+        level=logging.DEBUG
+    )
+
     args = argparse.ArgumentParser()
     args.add_argument("--zoom", type=float, default=5)
     args.add_argument("--text_num", type=int, default=50)
@@ -247,21 +269,21 @@ if __name__ == "__main__":
     args.add_argument("--audio_playlist", type=str, default='I')
     args.add_argument("--high_sync", type=str, default='False')
     args = args.parse_args()
-    print(f'now activating pedestal')
-    print(f'zoom: {args.zoom}')
-    print(f'text_num: {args.text_num}')
-    print(f'detect_interval: {args.detect_interval}')
+    log_and_print(f'now activating pedestal', 'info')
+    log_and_print(f'zoom: {args.zoom}', 'info')
+    log_and_print(f'text_num: {args.text_num}', 'info')
+    log_and_print(f'detect_interval: {args.detect_interval}', 'info')
     playlist_dict = {'I': ['isart'], 'N': ['notart'], 'D': ['describe']}
     playlist = [item for char in args.audio_playlist 
                for item in playlist_dict.get(char, [])]
-    print(f'audio_playlist: {playlist}')
+    log_and_print(f'audio_playlist: {playlist}', 'info')
     audio_detach = False if args.audio_detach != 'True' else True
-    print(f'audio_detach: {audio_detach}')
+    log_and_print(f'audio_detach: {audio_detach}', 'info')
     high_sync = False if args.high_sync != 'True' else True
-    print(f'high_sync: {high_sync}')
+    log_and_print(f'high_sync: {high_sync}', 'info')
 
-    print('================================================================================')
-    print("Now activating pedestal")
+    log_and_print('================================================================================', 'info')
+    log_and_print("Now activating pedestal", 'info')
     cap = cv2.VideoCapture(0)
     detector = MotionDetector(cap, zoom=args.zoom, text_num=args.text_num, detect_interval=args.detect_interval, audio_detach=audio_detach, audio_playlist=playlist, high_sync=high_sync)
     detector.run()

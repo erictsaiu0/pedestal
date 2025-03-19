@@ -4,6 +4,8 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 import threading
 import argparse
+from utils import log_and_print
+import logging
 
 # 紀錄當前播放的執行緒與控制變數
 current_thread = None
@@ -42,7 +44,7 @@ def play_mp3(file_path):
             time.sleep(0.1)
 
     except Exception as e:
-        print(f"Error playing audio: {str(e)}")
+        log_and_print(f"Error playing audio: {str(e)}", "ERROR")
 
     finally:
         pygame.mixer.music.stop()
@@ -65,6 +67,14 @@ def play_mp3_threaded(file_path):
 
 
 if __name__ == "__main__":
+    logname = 'log_sound'
+    logging.basicConfig(
+        filename=f'{logname}.log',
+        filemode='a',
+        format='%(asctime)s\t %(levelname)s\t %(message)s',
+        datefmt='%H:%M:%S',
+        level=logging.DEBUG
+    )
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", type=str, default="intro_alloy.mp3")
     parser.add_argument("-p", "--pressuretest", action="store_true", help="Enable pressure test mode")
