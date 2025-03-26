@@ -2,136 +2,189 @@ import os
 import numpy as np
 import cv2
 import argparse
+import gphoto2 as gp
+import subprocess
+import time
+import select
 
-class ZoomInSetting:
-    """
-    This class helps users find the appropriate zoom-in parameter for the camera.
-    """
-    def __init__(self, cap=None):
-        self.cap = cap
-        self.zoom = 0
-        self.save_path = "zoomin_check.jpg"
+class CameraController:
+    def __init__(self, use_dslr=False, camera_index=0):
+        self.use_dslr = use_dslr
+        if self.use_dslr:
+            self.context = gp.gp_context_new()
+            self.camera = gp.check_result(gp.gp_camera_new())
+            gp.check_result(gp.gp_camera_init(self.camera, self.context))
+            
+            self.iso_values = [6400, 3200, 1600, 800, 400, 200, 100]
+            self.aperture_values = ['16', '11', '8', '5.6', '4', '3.5']
+            self.shutter_speed_values = ['1/1000', '1/500', '1/250', '1/125', '1/60', '1/30', '1/15', '1/8', '1/4', '1/2', '1']
+            
+            self.iso_index = 2           # 預設 1600
+            self.aperture_index = 2        # 預設 '8'
+            self.shutter_speed_index = 2   # 預設 '1/60'
+            
+            self.apply_settings()  # 初始參數設定
+        else:
+            self.cap = cv2.VideoCapture(camera_index)
+            self.zoom = 0
+
+    def set_camera_setting(self, setting, value):
+        try:
+            config = gp.check_result(gp.gp_camera_get_config(self.camera, self.context))
+            setting_config = gp.check_result(gp.gp_widget_get_child_by_name(config, setting))
+            gp.check_result(gp.gp_widget_set_value(setting_config, value))
+            gp.check_result(gp.gp_camera_set_config(self.camera, config, self.context))
+        except gp.GPhoto2Error as e:
+            print(f"Error setting '{setting}' to '{value}': {e}")
+
+    def apply_settings(self):
+        # 若有正在執行的 live view，先終止它
+        if hasattr(self, 'process'):
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+        time.sleep(0.5)  # 給相機一些時間釋放 live view 資源
+
+        # 重新關閉目前相機連線，再重新初始化連線
+        try:
+            gp.check_result(gp.gp_camera_exit(self.camera, self.context))
+        except gp.GPhoto2Error as e:
+            # 若錯誤為 [-52]，表示找不到裝置，則忽略
+            if "-52" in str(e):
+                pass
+            else:
+                print(f"Error exiting camera: {e}")
+        time.sleep(1)
+        self.camera = gp.check_result(gp.gp_camera_new())
+        gp.check_result(gp.gp_camera_init(self.camera, self.context))
         
-    def center_crop(self, img, gray_resize_blur=False):
+        # 更新參數設定
+        self.iso = self.iso_values[self.iso_index]
+        self.aperture = self.aperture_values[self.aperture_index]
+        self.shutter_speed = self.shutter_speed_values[self.shutter_speed_index]
+        self.set_camera_setting('iso', str(self.iso))
+        self.set_camera_setting('aperture', self.aperture)
+        self.set_camera_setting('shutterspeed', self.shutter_speed)
+        print(f"Updated settings - ISO: {self.iso}, Aperture: {self.aperture}, Shutter Speed: {self.shutter_speed}")
+
+    def update_iso(self, value):
+        self.iso_index = int(value)
+        self.update_window_title()
+
+    def update_aperture(self, value):
+        self.aperture_index = int(value)
+        self.update_window_title()
+
+    def update_shutter_speed(self, value):
+        self.shutter_speed_index = int(value)
+        self.update_window_title()
+
+    def update_window_title(self):
+        title = f"ISO: {self.iso_values[self.iso_index]}, Aperture: {self.aperture_values[self.aperture_index]}, Shutter Speed: {self.shutter_speed_values[self.shutter_speed_index]} (Press 'u' to update)"
+        cv2.setWindowTitle("DSLR Settings Adjustment", title)
+
+    def start_live_view(self):
+        self.process = subprocess.Popen(['gphoto2', '--capture-movie', '--stdout'],
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def stream_live_view(self):
+        buffer = b""
+        update_requested = False
+        while True:
+            # 使用 select 監控 stdout，timeout 設為 0.01 秒
+            rlist, _, _ = select.select([self.process.stdout], [], [], 0.01)
+            if self.process.stdout in rlist:
+                data = self.process.stdout.read(4096)  # 一次讀取較大資料塊
+                if not data:
+                    break
+                buffer += data
+
+            # 當 buffer 中有完整 JPEG 時處理影像
+            while b'\xff\xd8' in buffer and b'\xff\xd9' in buffer:
+                start = buffer.find(b'\xff\xd8')
+                end = buffer.find(b'\xff\xd9') + 2
+                jpg = buffer[start:end]
+                buffer = buffer[end:]
+                image = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                if image is not None and image.size > 0:
+                    cv2.imshow('Live View', image)
+                key = cv2.waitKey(1)
+                if key == ord('q'):
+                    return 'quit'
+                elif key == ord('u'):
+                    update_requested = True
+                    break
+            if update_requested:
+                break
+        return 'update'
+
+    def update_zoom(self, zoom_value):
+        self.zoom = max(1, zoom_value / 10)
+
+    def center_crop(self, img):
         img = np.array(img)
         height, width = img.shape[:2]
-
-        # Step 1: 基本裁切成正方形
         new_width = min(width, height)
         left, top = (width - new_width) // 2, (height - new_width) // 2
         img = img[top:top+new_width, left:left+new_width]
-
-        # Step 2: 處理 zoom 的裁切
-        if self.zoom == 0:
-            # 當 zoom=0 時，直接返回中心正方形
-            img = img
-        elif self.zoom > 0:
+        if self.zoom > 0:
             zoom_ratio = 1 + (self.zoom/10)
             zoomed_size = int(new_width / zoom_ratio)
             crop_size = (new_width - zoomed_size) // 2
             img = img[crop_size:crop_size+zoomed_size, crop_size:crop_size+zoomed_size]
-
-        else:
-            raise ValueError("zoom must be non-negative")
-
-        # Step 3: 灰度轉換與高斯模糊（可選）
-        if gray_resize_blur:
-            if img.ndim == 3 and img.shape[2] == 3:
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            img = cv2.resize(img, (224, 224))
-            img = cv2.GaussianBlur(img, (15, 15), 0)
-
         return img
 
-
-    def update_zoom(self, zoom_value):
-        """
-        Update the zoom value based on the trackbar.
-        """
-        self.zoom = max(1, zoom_value / 10)  # Avoid zoom being less than 1
-
     def run(self):
-        """
-        Main loop to interactively adjust zoom and display the results.
-        """
-        cv2.namedWindow("Zoom Adjustment")
-
-        # Create a trackbar to adjust zoom
-        cv2.createTrackbar("Zoom", "Zoom Adjustment", int(self.zoom * 10), 100, self.update_zoom)
-
-        while True:
-            # Process the image with the current zoom
-            ret, frame = self.cap.read()
-            if not ret:
-                raise RuntimeError("Failed to capture image from webcam.")
-            processed_img = self.center_crop(frame, gray_resize_blur=False)
-            processed_img = cv2.resize(processed_img, (512, 512))
-            # Update the window title to show the current zoom value
-            window_title = f"Zoom Adjustment - Current Zoom: {self.zoom:.2f}"
-            cv2.setWindowTitle("Zoom Adjustment", window_title)
-
-            # Display the processed image
-            cv2.imshow("Zoom Adjustment", processed_img)
-
-            # Listen for key events
-            key = cv2.waitKey(1)
-            if key == ord("q"):  # Quit on 'q'
-                print("final zoom value:", self.zoom)
-                break
-            elif key == ord("s"):  # Save on 's'
-                cv2.imwrite(self.save_path, processed_img)
-                print(f"Saved image to {self.save_path}")
-
-        cv2.destroyAllWindows()
+        if self.use_dslr:
+            cv2.namedWindow("DSLR Settings Adjustment")
+            cv2.createTrackbar("ISO", "DSLR Settings Adjustment", self.iso_index, len(self.iso_values)-1, self.update_iso)
+            cv2.createTrackbar("Aperture", "DSLR Settings Adjustment", self.aperture_index, len(self.aperture_values)-1, self.update_aperture)
+            cv2.createTrackbar("Shutter Speed", "DSLR Settings Adjustment", self.shutter_speed_index, len(self.shutter_speed_values)-1, self.update_shutter_speed)
+            self.update_window_title()
+            print("Press 'u' to update settings, 'q' to quit.")
+            while True:
+                self.start_live_view()
+                action = self.stream_live_view()
+                if action == 'quit':
+                    break
+                elif action == 'update':
+                    self.apply_settings()
+            # 最後嘗試關閉相機連線，忽略找不到裝置的錯誤
+            try:
+                gp.check_result(gp.gp_camera_exit(self.camera, self.context))
+            except gp.GPhoto2Error as e:
+                if "-52" in str(e):
+                    pass
+                else:
+                    print(f"Error during exit: {e}")
+            cv2.destroyAllWindows()
+        else:
+            cv2.namedWindow("Zoom Adjustment")
+            cv2.createTrackbar("Zoom", "Zoom Adjustment", int(self.zoom * 10), 100, self.update_zoom)
+            while True:
+                ret, frame = self.cap.read()
+                if not ret:
+                    raise RuntimeError("Failed to capture image from webcam.")
+                processed_img = self.center_crop(frame)
+                processed_img = cv2.resize(processed_img, (512, 512))
+                window_title = f"Zoom Adjustment - Current Zoom: {self.zoom:.2f}"
+                cv2.setWindowTitle("Zoom Adjustment", window_title)
+                cv2.imshow("Zoom Adjustment", processed_img)
+                key = cv2.waitKey(1)
+                if key == ord("q"):
+                    print("Final zoom value:", self.zoom)
+                    break
+                elif key == ord("s"):
+                    cv2.imwrite("zoomin_check.jpg", processed_img)
+                    print("Saved image to zoomin_check.jpg")
+            cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--camera", type=int, default=0, help="Camera index")
-
+    parser.add_argument("--dslr", action="store_true", help="Use DSLR for live view and parameter adjustment")
+    parser.add_argument("--camera", type=int, default=0, help="Camera index for webcam")
     args = parser.parse_args()
-    cap = cv2.VideoCapture(args.camera)
-    checker = ZoomInSetting(cap)
-    checker.run()
-
-
-# class ZoomInSetting:
-#     '''
-#     This function is to find the appropriate zoom in parameter for the camera
-#     '''
-#     def __init__(self, cap):
-#         self.cap = cap
-#         self.zoom = 1.7
-#         self.save_path = "zoomin_check.jpg"
-#         self.test_img = cv2.imread(r"/Users/erictsai/Desktop/pedestal/triggered.jpg")
-#     def center_crop(self, img, zoom=2, gray_resize_blur=False):
-#         img = np.array(img)
-#         height, width = img.shape[:2]
-
-#         new_width = min(width, height)
-#         left, top = (width - new_width) // 2, (height - new_width) // 2
-#         img = img[top:top+new_width, left:left+new_width]
-
-#         if zoom > 0:
-#             zoom_ratio = 1 + (1 / zoom)
-#             crop_size = int(new_width / zoom_ratio / 2)
-#             if crop_size * 2 < new_width:
-#                 img = img[crop_size:-crop_size, crop_size:-crop_size]
-#             print(crop_size, img.shape)
-#         elif zoom < 0:
-#             raise ValueError("zoom must be non-negative")
-
-#         if gray_resize_blur:
-#             if img.ndim == 3 and img.shape[2] == 3:  # 確保是彩色圖片
-#                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#             img = cv2.resize(img, (224, 224))
-#             img = cv2.GaussianBlur(img, (15, 15), 0)
-#         return img
-
-#     def test(self):
-#         img = self.center_crop(self.test_img, zoom=self.zoom, gray_resize_blur=False)
-#         cv2.imwrite(self.save_path, img)
-#         return img
-    
-# if __name__ == "__main__":
-#     checker = ZoomInSetting(None)
-#     img = checker.test()
+    controller = CameraController(use_dslr=args.dslr, camera_index=args.camera)
+    controller.run()
