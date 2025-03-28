@@ -9,6 +9,10 @@ import sound
 from utils import log_and_print
 import logging
 
+import platform
+if platform.machine().startswith("arm"):
+    import printer
+
 def recv_msg(sock):
     # Read message length and unpack it into an integer
     raw_msglen = recvall(sock, 4)
@@ -40,6 +44,9 @@ class PiSocket:
 
     def __init__(self, pi_name):
         self.ip = inv_addr_dict[pi_name]
+        self.pi_name = pi_name
+        if pi_name == "printer":
+            self.printer_manager = printer.ThermalPrinterManager()
         self.port = 12345
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((self.ip, self.port))
@@ -79,6 +86,17 @@ class PiSocket:
                 elif command == "play_intro":
                     sound.play_mp3_threaded("intro_alloy.mp3")
                     client_socket.send("intro played!".encode())
+                elif command == "print":
+                    client_socket.send("ACK, start receiving text...".encode())
+                    
+                    printer_text = client_socket.recv(1024).decode()
+                    log_and_print(f"[{self.ip}] Received printer text: {printer_text}", 'info')
+                    if not printer_text:
+                        log_and_print(f"[{self.ip}] Did not receive printer text, closing connection.", 'info')
+                        break
+                    else:
+                        self.printer_manager.print_text(printer_text)
+                    client_socket.send("print done!".encode())
                 else:
                     print(f"[{self.ip}] Unknown command: {command}")
                     client_socket.send("Unknown command".encode())
@@ -133,6 +151,20 @@ class MacSocket:
             log_and_print(f"[{self.target_pi_name}] File sent successfully.", 'info')
         except Exception as e:
             log_and_print(f"Error sending file: {e}", 'error')
+        finally:
+            self.client_socket.close()
+    
+    def send_printer_text(self, text):
+        try:
+            self.client_socket.send("print".encode())
+            response = self.client_socket.recv(1024).decode()
+            log_and_print(f"[{self.target_pi_name}] {response}")
+
+            self.client_socket.send(text.encode())
+            response = self.client_socket.recv(1024).decode()
+            log_and_print(f"[{self.target_pi_name}] {response}")
+        except Exception as e:
+            log_and_print(f"Error sending printer text: {e}", 'error')
         finally:
             self.client_socket.close()
 
