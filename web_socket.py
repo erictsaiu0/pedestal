@@ -206,6 +206,9 @@ if __name__ == "__main__":
         elif args.id == "describe":
             sckt = PiSocket("describe")
             sckt.run()
+        elif args.id == "printer":
+            sckt = PiSocket("printer")
+            sckt.run()
         else:
             print("Invalid id")
             exit(1)
