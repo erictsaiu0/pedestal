@@ -10,7 +10,7 @@ from utils import log_and_print
 import logging
 
 import platform
-if platform.machine().startswith("arm"):
+if platform.machine() in ('armv7l', 'armv6l', 'aarch64'):
     import printer
 
 def recv_msg(sock):
@@ -158,7 +158,7 @@ class MacSocket:
         try:
             self.client_socket.send("print".encode())
             response = self.client_socket.recv(1024).decode()
-            log_and_print(f"[{self.target_pi_name}] {response}")
+            log_and_print(f"[{self.target_pi_name}] {response}", 'info')
 
             self.client_socket.send(text.encode())
             response = self.client_socket.recv(1024).decode()

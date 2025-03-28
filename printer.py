@@ -19,8 +19,8 @@ class ThermalPrinterManager:
         self.printer = ThermalPrinter(self.uart)
 
         # 設置 GBK 編碼模式（某些打印機可能需要）
-        # self.printer._uart.write(b'\x1B\x74\x26')  # ESC t 38 (GB18030)
-        self.printer._uart.write(b'\x1B\x7B\x01')  # ESC { 1 -> 開啟倒置模式
+        self.printer._uart.write(b'\x1B\x74\x26')  # ESC t 38 (GB18030)
+        # self.printer._uart.write(b'\x1B\x7B\x01')  # ESC { 1 -> 開啟倒置模式
 
         # 設定全域變數的實例
         printer_manager = self
