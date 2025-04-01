@@ -58,37 +58,39 @@ def call_api(image_base64:str, instruction:str):
     return res['choices'][0]['message']['content']
 
 def describe_iamge(image_base64:str, text_num:int=50):
-    instruct = f"請想像你是直接看見，並以{str(text_num)}字繁體中文描述這個物品。"
+    instruct = f"請想像你是直接看見，並以{str(text_num)}字繁體中文描述這個物品。最後加上英文翻譯。"
     result = call_api(image_base64, instruct)
     return result
 
-def is_art(image_base64:str, text_num:int=50):
-    instruct = f"請想像你是直接看見這個放在展台上的藝術品，請以繁體中文介紹這個作品的名稱，並以{str(text_num)}字介紹他的作品理念。"
+def is_art(image_base64:str, text_num:int=100):
+    reference = "介紹時請參考（但不一定要提及）以下關鍵字：觀念藝術、 現成物、雕塑、藝術品、勞動、存在主義、解構主義。可參考（但不一定要提及）當代藝術家如杜象、波伊斯等的作品創作理念。"
+    instruct = f"請想像你是直接看見這個放在展台上的藝術品，請以繁體中文介紹這個作品的名稱，並以{str(text_num)}字評論這個作品。{reference}最後加上英文翻譯。"
     result = call_api(image_base64, instruct)
     return result
 
-def not_art(image_base64:str, text_num:int=50):
-    instruct = f"請想像你是直接看見，請以{str(text_num)}字以內的繁體中文告訴我為何這個這個放在展台上的東西不是一個藝術作品。"
+def not_art(image_base64:str, text_num:int=100):
+    reference = "介紹時請參考（但不一定要提及）以下關鍵字：觀念藝術、 現成物、雕塑、藝術品、勞動、存在主義、解構主義。可參考（但不一定要提及）當代藝術家如杜象、波伊斯等的作品創作理念。"
+    instruct = f"請想像你是直接看見，請以{str(text_num)}字以內的繁體中文告訴我為何這個這個放在展台上的東西不是一個藝術作品。{reference}最後加上英文翻譯。"
     result = call_api(image_base64, instruct)
     return result
 
 if __name__ == "__main__":
-    logname = 'log_gpt_utils.py'
-    logging.basicConfig(
-        filename=f'{logname}.log',
-        filemode='a',
-        format='%(asctime)s\t %(levelname)s\t %(message)s',
-        datefmt='%H:%M:%S',
-        level=logging.DEBUG
-    )
+    # logname = 'log_gpt_utils'
+    # logging.basicConfig(
+    #     filename=f'{logname}.log',
+    #     filemode='a',
+    #     format='%(asctime)s\t %(levelname)s\t %(message)s',
+    #     datefmt='%H:%M:%S',
+    #     level=logging.DEBUG
+    # )
 
-    img_path = '/Users/erictsai/Desktop/anythingart/example_img/作品｜展台｜AI練習圖片_2.png'
+    img_path = 'example_img/作品｜展台｜AI練習圖片_4.png'
     img = cv2.imread(img_path)
     img = imageResize(img_path, 0.5)
     img_base64 = image2base64(img)
-    describe = describe_iamge(img_base64)
+    # describe = describe_iamge(img_base64)
     isart = is_art(img_base64)
-    notart = not_art(img_base64)
-    print(f"Description: {describe}")
+    # notart = not_art(img_base64)
+    # print(f"Description: {describe}")
     print(f"Is art: {isart}")
-    print(f"Not art: {notart}")
+    # print(f"Not art: {notart}")
