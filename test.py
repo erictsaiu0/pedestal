@@ -6,9 +6,10 @@ import gphoto2 as gp
 import subprocess
 import time
 import select
+import json
 
 class CameraController:
-    def __init__(self, use_dslr=False, camera_index=0):
+    def __init__(self, use_dslr=False, camera_index=0, save_config_path=None):
         self.use_dslr = use_dslr
         if self.use_dslr:
             self.context = gp.gp_context_new()
@@ -27,6 +28,7 @@ class CameraController:
         else:
             self.cap = cv2.VideoCapture(camera_index)
             self.zoom = 0
+        self.save_config_path = save_config_path
 
     def set_camera_setting(self, setting, value):
         try:
@@ -112,6 +114,12 @@ class CameraController:
                     cv2.imshow('Live View', image)
                 key = cv2.waitKey(1)
                 if key == ord('q'):
+                    if self.save_config_path:
+                        print(f"Now quiting, saving config to {self.save_config_path}") 
+                        config = {'iso': self.iso_values[self.iso_index], 'aperture': self.aperture_values[self.aperture_index], 'shutter_speed': self.shutter_speed_values[self.shutter_speed_index]}
+                        # overwrite the config file
+                        with open(self.save_config_path, 'w') as f:
+                            json.dump(config, f, indent=4)
                     return 'quit'
                 elif key == ord('u'):
                     update_requested = True
@@ -174,6 +182,11 @@ class CameraController:
                 cv2.imshow("Zoom Adjustment", processed_img)
                 key = cv2.waitKey(1)
                 if key == ord("q"):
+                    if self.save_config_path:
+                        print(f"Now quiting, saving config to {self.save_config_path}") 
+                        config = {'zoom': self.zoom}
+                        with open(self.save_config_path, 'w') as f:
+                            json.dump(config, f)
                     print("Final zoom value:", self.zoom)
                     break
                 elif key == ord("s"):
@@ -185,6 +198,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dslr", action="store_true", help="Use DSLR for live view and parameter adjustment")
     parser.add_argument("--camera", type=int, default=0, help="Camera index for webcam")
+    parser.add_argument("--save_config", type=str, default='camera_config.json', help="Path to save the camera configuration")
     args = parser.parse_args()
-    controller = CameraController(use_dslr=args.dslr, camera_index=args.camera)
+    controller = CameraController(use_dslr=args.dslr, camera_index=args.camera, save_config_path=args.save_config)
     controller.run()
