@@ -12,3 +12,6 @@
 127.0.0.1.mp3
 socket_reference.py
 isart.mp3
+logs/*
+captured_image.jpg
+camera_config.json

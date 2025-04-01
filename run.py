@@ -14,14 +14,65 @@ import logging
 from datetime import datetime
 import subprocess
 import select
+import json
+import gphoto2 as gp
 
 # DSLRCapture 類別：模擬 cv2.VideoCapture 行為，但讀取 DSLR live view 資料
 class DSLRCapture:
     def __init__(self):
+        self.context = gp.gp_context_new()
+        self.camera = gp.check_result(gp.gp_camera_new())
+        gp.check_result(gp.gp_camera_init(self.camera, self.context))
+        self.apply_settings('camera_config.json')
         self.process = subprocess.Popen(['gphoto2', '--capture-movie', '--stdout'],
                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.buffer = b""
-    
+
+    def set_camera_setting(self, setting, value):
+        try:
+            config = gp.check_result(gp.gp_camera_get_config(self.camera, self.context))
+            setting_config = gp.check_result(gp.gp_widget_get_child_by_name(config, setting))
+            gp.check_result(gp.gp_widget_set_value(setting_config, value))
+            gp.check_result(gp.gp_camera_set_config(self.camera, config, self.context))
+        except gp.GPhoto2Error as e:
+            print(f"Error setting '{setting}' to '{value}': {e}")
+
+    def apply_settings(self, setting_config_path):
+        # 若有正在執行的 live view，先終止它
+        if hasattr(self, 'process'):
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+        time.sleep(0.5)  # 給相機一些時間釋放 live view 資源
+
+        # 重新關閉目前相機連線，再重新初始化連線
+        try:
+            gp.check_result(gp.gp_camera_exit(self.camera, self.context))
+        except gp.GPhoto2Error as e:
+            # 若錯誤為 [-52]，表示找不到裝置，則忽略
+            if "-52" in str(e):
+                pass
+            else:
+                print(f"Error exiting camera: {e}")
+        time.sleep(1)
+        self.camera = gp.check_result(gp.gp_camera_new())
+        gp.check_result(gp.gp_camera_init(self.camera, self.context))
+        
+        # 更新參數設定
+        # load setting_config_path, iis a json file
+        with open(setting_config_path, 'r') as f:
+            setting_config = json.load(f)
+        self.iso_values = setting_config['iso']
+        self.aperture_values = setting_config['aperture']
+        self.shutter_speed_values = setting_config['shutter_speed']
+        print(self.iso_values, self.aperture_values, self.shutter_speed_values)
+        self.set_camera_setting('iso', str(self.iso_values))
+        self.set_camera_setting('aperture', str(self.aperture_values))
+        self.set_camera_setting('shutterspeed', str(self.shutter_speed_values))
+        print(f"Apply with settings - ISO: {self.iso_values}, Aperture: {self.aperture_values}, Shutter Speed: {self.shutter_speed_values}")
+
     def read(self):
         # 內部循環最多等待 5 秒，嘗試取得一張完整的 JPEG 影像
         start_time = time.time()
@@ -111,6 +162,8 @@ class MotionDetector:
         if len(self.audio_playlist) == 0 and len(self.printer_list) == 0:
             log_and_print("No action specified", 'error')
             raise ValueError("No action specified")
+
+        self.resized_shape = (224, 224)
         # 建立 frame grabber 以持續取得最新影像
         self.frame_grabber = FrameGrabber(self.cap)
         self.background = self.initialize_background()
@@ -120,7 +173,7 @@ class MotionDetector:
         self.intro_sound_path = r'intro_alloy.mp3'
         self.high_sync = high_sync
         # 定義一個差異容許值，低於此值即視為「無變化」
-        self.diff_threshold = 5000
+        self.diff_threshold = self.resized_shape[0] * self.resized_shape[1] * 0.05
 
     def center_crop(self, img, gray_resize_blur=False):
         img = np.array(img)
@@ -141,7 +194,7 @@ class MotionDetector:
         if gray_resize_blur:
             if img.ndim == 3 and img.shape[2] == 3:
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            img = cv2.resize(img, (224, 224))
+            img = cv2.resize(img, self.resized_shape)
             img = cv2.GaussianBlur(img, (15, 15), 0)
         return img
 
@@ -332,8 +385,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--zoom", type=float, default=5)
-    parser.add_argument("--text_num", type=int, default=50)
-    parser.add_argument("--detect_interval", type=int, default=5)
+    parser.add_argument("--text_num", type=int, default=100)
+    parser.add_argument("--detect_interval", type=int, default=2.5)
     parser.add_argument("--audio_detach", type=str, default='False')
     parser.add_argument("--audio_playlist", type=str, default='I')
     parser.add_argument("--printer_detach", type=str, default='False')
@@ -374,3 +427,4 @@ if __name__ == "__main__":
     detector.run()
     
     # python run.py --zoom 5 --audio_playlist ID --dslr
+    # sudo python run.py --dslr --printer_detach True --printer_list I
