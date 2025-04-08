@@ -384,17 +384,18 @@ if __name__ == "__main__":
     )
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--zoom", type=float, default=5)
-    parser.add_argument("--text_num", type=int, default=100)
+    parser.add_argument("--zoom", type=float, default=3)
+    parser.add_argument("--text_num", type=int, default=150)
     parser.add_argument("--detect_interval", type=int, default=2.5)
     parser.add_argument("--audio_detach", type=str, default='False')
-    parser.add_argument("--audio_playlist", type=str, default='I')
+    parser.add_argument("--audio_playlist", type=str, default='')
     parser.add_argument("--printer_detach", type=str, default='False')
-    parser.add_argument("--printer_list", type=str, default='I')
+    parser.add_argument("--printer_list", type=str, default='')
     parser.add_argument("--high_sync", type=str, default='False')
     parser.add_argument("--dslr", action="store_true", help="Use DSLR for live view and parameter adjustment")
     args = parser.parse_args()
-    
+
+    log_and_print('================================ Pedestal Start ================================', 'info')
     log_and_print(f'now activating pedestal', 'info')
     log_and_print(f'zoom: {args.zoom}', 'info')
     log_and_print(f'text_num: {args.text_num}', 'info')
