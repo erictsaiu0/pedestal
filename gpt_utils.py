@@ -64,7 +64,7 @@ def describe_iamge(image_base64:str, text_num:int=50):
 
 def is_art(image_base64:str, text_num:int=100):
     reference = "介紹時請參考（但不一定要提及）以下關鍵字：觀念藝術、 現成物、雕塑、藝術品、勞動、存在主義、解構主義。可參考（但不一定要提及）當代藝術家如杜象、波伊斯等的作品創作理念。"
-    instruct = f"請想像你是直接看見這個放在展台上的藝術品，請以繁體中文介紹這個作品的名稱，並以{str(text_num)}字評論這個作品。{reference}最後加上英文翻譯。"
+    instruct = f"你是一個這個藝術品的作者，請想像你是直接看見這個放在展台上的藝術品，首先先介紹它的藝術作品名，並以{str(text_num)}字繁體中文向10歲小孩介紹這個作品。接著說說這個作品背後的故事。最後做一個簡單的英文總結。"
     result = call_api(image_base64, instruct)
     return result
 
