@@ -1,11 +1,9 @@
 #!/bin/bash
 # mac_launchd_setup.sh
-# 本 script 會根據使用者輸入內容建立啟動與關閉的 LaunchDaemon plist 檔案，
-# 並將其複製到 /Library/LaunchDaemons/ 內，
-# 載入 plist 後即可依預定時間以 root 權限執行啟動與關閉指令，
-# 其中啟動命令會依據使用者輸入的完整呼叫指令拆解成各個參數，
-# 使用者可輸入 "boot" 作為啟動時間，以達到開機立即自動啟動的效果，
-# 關閉則依使用者輸入的關閉時間 (格式 HH:MM) 執行關閉 script。
+# 本 script 會依據使用者輸入建立啟動與關閉用的 LaunchDaemon plist 檔案，
+# 並將其複製到 /Library/LaunchDaemons/ 內，載入後即可依預定時間以 root 權限執行，
+# 其中啟動 command 會以使用者輸入的啟動 script 絕對路徑作為執行檔，
+# 而呼叫指令中原本指定的相對路徑部分會被丟棄，只保留後續的參數。
 
 #############################
 # 0. 確認以 root 身份執行
@@ -63,6 +61,11 @@ fi
 # 將呼叫指令拆解成陣列 (依空白分隔)
 read -r -a call_args <<< "$call_command"
 
+# 移除第一個元素（原本的相對路徑），用使用者在 step 2 輸入的 $start_script 取代
+unset call_args[0]
+# 重新索引陣列
+call_args=("${call_args[@]}")
+
 #############################
 # 4. 修改啟動與關閉 script 的權限（使其可執行）
 #############################
@@ -86,9 +89,10 @@ cat <<EOF > "$start_plist"
     <string>com.user.start</string>
     <key>ProgramArguments</key>
     <array>
+      <string>${start_script}</string>
 EOF
 
-# 將 call_args 陣列的各個參數加入 plist
+# 將 call_args 陣列各項參數寫入 plist
 for arg in "${call_args[@]}"; do
   echo "      <string>${arg}</string>" >> "$start_plist"
 done
@@ -97,7 +101,7 @@ cat <<EOF >> "$start_plist"
     </array>
 EOF
 
-# 如果啟動時間不是 boot，則加上定時啟動設定
+# 若啟動時間不是 boot，則加上定時啟動設定
 if [ "$use_interval" = "yes" ]; then
 cat <<EOF >> "$start_plist"
     <key>StartCalendarInterval</key>
@@ -157,23 +161,23 @@ echo "已建立 plist 檔案： $start_plist 與 $stop_plist"
 #############################
 # 6. 複製 plist 檔案到 /Library/LaunchDaemons/
 #############################
-# DEST_DIR="/Library/LaunchDaemons"
-# cp "$start_plist" "$DEST_DIR/"
-# cp "$stop_plist" "$DEST_DIR/"
-# echo "已複製 plist 檔案到 $DEST_DIR"
+DEST_DIR="/Library/LaunchDaemons"
+cp "$start_plist" "$DEST_DIR/"
+cp "$stop_plist" "$DEST_DIR/"
+echo "已複製 plist 檔案到 $DEST_DIR"
 
-# # 設定 plist 檔擁有權與權限：owner 為 root:wheel，權限 644
-# chown root:wheel "$DEST_DIR/$start_plist" "$DEST_DIR/$stop_plist"
-# chmod 644 "$DEST_DIR/$start_plist" "$DEST_DIR/$stop_plist"
-# echo "已設定 plist 檔案的擁有權與權限 (root:wheel, 644)"
+# 設定 plist 檔擁有權與權限：owner 為 root:wheel，權限 644
+chown root:wheel "$DEST_DIR/$start_plist" "$DEST_DIR/$stop_plist"
+chmod 644 "$DEST_DIR/$start_plist" "$DEST_DIR/$stop_plist"
+echo "已設定 plist 檔案的擁有權與權限 (root:wheel, 644)"
 
-# #############################
-# # 7. 載入 plist 檔案
-# #############################
-# launchctl unload "$DEST_DIR/$start_plist" 2>/dev/null
-# launchctl unload "$DEST_DIR/$stop_plist" 2>/dev/null
-# launchctl load "$DEST_DIR/$start_plist"
-# launchctl load "$DEST_DIR/$stop_plist"
-# echo "LaunchDaemon 已載入： $start_plist 與 $stop_plist"
+#############################
+# 7. 載入 plist 檔案
+#############################
+launchctl unload "$DEST_DIR/$start_plist" 2>/dev/null
+launchctl unload "$DEST_DIR/$stop_plist" 2>/dev/null
+launchctl load "$DEST_DIR/$start_plist"
+launchctl load "$DEST_DIR/$stop_plist"
+echo "LaunchDaemon 已載入： $start_plist 與 $stop_plist"
 
 echo "設定完成。"
