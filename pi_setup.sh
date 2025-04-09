@@ -10,7 +10,7 @@ fi
 ID="$1"
 
 # 動態生成 script B 的執行命令
-SCRIPT_B_PATH="pi_setup.sh"  # 替換為 script B 的實際路徑
+SCRIPT_B_PATH="pi_activate.sh"  # 替換為 script B 的實際路徑
 BASHRC_PATH="/home/raspberrypi/.bashrc"
 
 # 取得使用者的名稱，並依此將指令加入 .bashrc

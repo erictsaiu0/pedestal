@@ -2,21 +2,24 @@
 # -----------------------------------------------------------------------------
 # pedestal_activate.sh
 #
-# 功能：
-#  1. 根據使用者指定或自動偵測的平台（raspberrypi 或 macos）啟動 run.py，
-#     並將其他參數（例如 --dslr --printer_detach True --printer_list I）
-#     原封不動地傳給 run.py。
-#  2. 若未提供 --platform，則根據 uname 自動偵測：
-#       Darwin  → macos
-#       Linux   → 若 /proc/cpuinfo 中含 "Raspberry"，則設為 raspberrypi，
-#                 否則預設為 raspberrypi
-#  3. 使用 sudo 執行 run.py（滿足 USB 相機操作需求），
-#     並從 .pedestal 虛擬環境中啟動 python。
-#  4. 若 run.py 因 segmentation fault (退出碼 139) 結束，則自動重啟。
+# 說明：
+#  此腳本會根據使用者指定或自動偵測的平台（raspberrypi 或 macos）
+#  啟動 run.py 並傳遞額外參數（例如 --dslr --printer_detach True --printer_list I)；
+#  遇到 segmentation fault (退出碼 139) 時會自動重新啟動 run.py。
 #
-# 注意：
-#  此版本不再檢查時間自動關閉，由 launchd 負責啟動與終止。
+#  若未提供 --platform 參數，則自動偵測作業系統：
+#    Darwin  → macos
+#    Linux   → 如果 /proc/cpuinfo 中含 "Raspberry"，則設為 raspberrypi，
+#              否則預設為 raspberrypi
+#
+#  注意：由於預計會由 launchd 在開機時啟動此腳本，因此在腳本開頭加入 cd 指令，
+#       確保工作目錄切換至腳本所在資料夾，讓所有相對路徑正確運作。
+#
+#  此版本不再包含依據時間自動關閉的邏輯，關閉工作由 launchd 處理。
 # -----------------------------------------------------------------------------
+
+# 切換至腳本所在資料夾（launchd 啟動時會使用預設工作目錄）
+cd "$(dirname "$0")" || exit 1
 
 # 1. 解析參數：分離 --platform 參數，其餘參數存入 SERVER_ARGS 陣列
 MODE=""
@@ -35,7 +38,7 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
-# 若未提供 --platform，則自動偵測
+# 若未提供 --platform 則自動偵測
 if [ -z "$MODE" ]; then
     OS_TYPE=$(uname -s)
     if [ "$OS_TYPE" = "Darwin" ]; then
@@ -87,7 +90,7 @@ RUNPY_ARGS="${SERVER_ARGS[*]}"
 echo "傳入 run.py 的參數字串：$RUNPY_ARGS"
 
 # 5. 建立臨時腳本並利用 screen 執行 while 迴圈
-#    ※ 本版本移除了自動關閉的時間檢查，由 launchd 控制關閉
+#    ※ 此版本移除了自動關閉的時間檢查，由 launchd 控制關閉
 TEMP_SCRIPT=$(mktemp)
 chmod +x "$TEMP_SCRIPT"
 
