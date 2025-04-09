@@ -1,25 +1,35 @@
 #!/bin/bash
-# mac_lauchd_setup.sh
+# mac_launchd_setup.sh
 # 本 script 會根據使用者輸入內容建立啟動與關閉的 LaunchDaemon plist 檔案，
-# 並將其複製到 /Library/LaunchDaemons/ 內，載入後即可依預定時間以 root 權限執行，
-# 其中啟動命令會依據使用者輸入的完整呼叫指令（例如：sudo ./pedestal_activate.sh --dslr --printer_detach True --printer_list I）
-# 自動拆解成各個參數（若指令前有 sudo 則自動移除）。
+# 並將其複製到 /Library/LaunchDaemons/ 內，
+# 載入 plist 後即可依預定時間以 root 權限執行啟動與關閉指令，
+# 其中啟動命令會依據使用者輸入的完整呼叫指令拆解成各個參數，
+# 使用者可輸入 "boot" 作為啟動時間，以達到開機立即自動啟動的效果，
+# 關閉則依使用者輸入的關閉時間 (格式 HH:MM) 執行關閉 script。
 
-# 請以 root 權限執行本 script
+#############################
+# 0. 確認以 root 身份執行
+#############################
 if [[ $EUID -ne 0 ]]; then
-  echo "請以 root 權限執行此 script (例如: sudo ./mac_lauchd_setup.sh)"
+  echo "請以 root 權限執行此 script (例如: sudo ./mac_launchd_setup.sh)"
   exit 1
 fi
 
 #############################
 # 1. 詢問啟動與關閉時間
 #############################
-read -p "請輸入啟動時間 (格式 HH:MM): " start_time
+read -p "請輸入啟動時間 (格式 HH:MM)，或輸入 'boot' 表示開機自動啟動: " start_time
 read -p "請輸入關閉時間 (格式 HH:MM): " stop_time
 
-# 從時間字串解析小時與分鐘
-start_hour=${start_time%%:*}
-start_minute=${start_time##*:}
+# 判斷啟動時間是否為 'boot'
+if [[ "$start_time" == "boot" ]]; then
+    use_interval="no"
+else
+    start_hour=${start_time%%:*}
+    start_minute=${start_time##*:}
+    use_interval="yes"
+fi
+
 stop_hour=${stop_time%%:*}
 stop_minute=${stop_time##*:}
 
@@ -29,7 +39,7 @@ stop_minute=${stop_time##*:}
 read -p "請輸入啟動 script 的完整路徑: " start_script
 read -p "請輸入關閉 script 的完整路徑: " stop_script
 
-# 簡單檢查檔案是否存在
+# 檢查檔案是否存在
 if [[ ! -f "$start_script" ]]; then
   echo "錯誤：找不到啟動 script，請檢查路徑：$start_script"
   exit 1
@@ -45,16 +55,16 @@ fi
 #############################
 read -p "請輸入呼叫啟動 script 的完整指令 (例如: sudo ./pedestal_activate.sh --dslr --printer_detach True --printer_list I): " call_command
 
-# 若輸入內容以 "sudo " 開頭，則移除前綴 (plist 內以 root 身份執行即可)
+# 若輸入內容以 "sudo " 開頭，則移除前綴（因為 plist 已以 root 權限執行）
 if [[ "$call_command" =~ ^sudo[[:space:]]+ ]]; then
   call_command="${call_command#sudo }"
 fi
 
-# 將 call_command 拆解為陣列，假設以空白區隔
+# 將呼叫指令拆解成陣列 (依空白分隔)
 read -r -a call_args <<< "$call_command"
 
 #############################
-# 4. 修改啟動與關閉 script 權限（使其可執行）
+# 4. 修改啟動與關閉 script 的權限（使其可執行）
 #############################
 chmod +x "$start_script"
 chmod +x "$stop_script"
@@ -78,13 +88,18 @@ cat <<EOF > "$start_plist"
     <array>
 EOF
 
-# 將 call_args 陣列依序寫入 plist 的 <string> 元素中
+# 將 call_args 陣列的各個參數加入 plist
 for arg in "${call_args[@]}"; do
   echo "      <string>${arg}</string>" >> "$start_plist"
 done
 
 cat <<EOF >> "$start_plist"
     </array>
+EOF
+
+# 如果啟動時間不是 boot，則加上定時啟動設定
+if [ "$use_interval" = "yes" ]; then
+cat <<EOF >> "$start_plist"
     <key>StartCalendarInterval</key>
     <dict>
       <key>Hour</key>
@@ -92,6 +107,10 @@ cat <<EOF >> "$start_plist"
       <key>Minute</key>
       <integer>${start_minute}</integer>
     </dict>
+EOF
+fi
+
+cat <<EOF >> "$start_plist"
     <key>RunAtLoad</key>
     <true/>
     <key>StandardOutPath</key>
@@ -143,7 +162,7 @@ echo "已建立 plist 檔案： $start_plist 與 $stop_plist"
 # cp "$stop_plist" "$DEST_DIR/"
 # echo "已複製 plist 檔案到 $DEST_DIR"
 
-# # 設定 plist 擁有權與權限：owner 為 root:wheel，權限 644
+# # 設定 plist 檔擁有權與權限：owner 為 root:wheel，權限 644
 # chown root:wheel "$DEST_DIR/$start_plist" "$DEST_DIR/$stop_plist"
 # chmod 644 "$DEST_DIR/$start_plist" "$DEST_DIR/$stop_plist"
 # echo "已設定 plist 檔案的擁有權與權限 (root:wheel, 644)"
