@@ -118,9 +118,12 @@ echo "啟動 screen 會話 (名稱：server) 以執行監控流程..."
 screen -L -dmS server bash "$TEMP_SCRIPT"
 if [ $? -eq 0 ]; then
     echo "screen 會話啟動成功。"
-    screen -r
+    # screen -r
 else
     echo "screen 會話啟動失敗！"
 fi
 
 rm "$TEMP_SCRIPT"
+# 增加一個阻塞命令，保持此啟動器進程不退出
+echo "保持進程運行，等待 screen 會話結束..."
+tail -f /dev/null
